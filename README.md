@@ -70,10 +70,11 @@ python setup.py install
 	
 * 由于数据中记录较少的副本掉落偏差较大，因此代码中默认过滤掉统计频次低于20的记录，如需修改，可在 *main.py* 中将第6行改为
 
-```
-    mp = MaterialPlanning(filter_freq=n)
-```
-n为你想自定义的频次下限，0则为不过滤。
+	```
+	    mp = MaterialPlanning(filter_freq=n)
+	```
+	
+	n为你想自定义的频次下限，0则为不过滤。
 
 	
 ***2. Jupyter Notebook 或在你自己的代码中调用***
