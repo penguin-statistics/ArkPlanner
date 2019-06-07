@@ -9,9 +9,9 @@ ArkPlanner is a tiny python tool for the mobile game Arknight. It helps you make
 
 ***1. 环境配置 - Environment requirements***
 
-需要安装Python 3.6以上版本。Windows系统可通过[此链接](https://www.anaconda.com/distribution/)安装Anaconda。强烈推荐使用Jupyter notebook，详情请百度。
+需要安装Python 3.5以上版本。Windows系统可通过[此链接](https://www.anaconda.com/distribution/)安装Anaconda。强烈推荐使用Jupyter notebook，详情请百度。
 
-Python >= 3.6 Required. For Windows users, I recommand to install [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommanded. Google it for more details.
+Python >= 3.5 Required. For Windows users, I recommand to install [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommanded. Google it for more details.
 
 ***2. 安装 - Installation***
 
