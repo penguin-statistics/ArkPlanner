@@ -5,7 +5,7 @@ from scipy.optimize import linprog
 class MaterialPlanning(object):
     
     def __init__(self, 
-                 low_freq_filter=False,
+                 filter_freq=20,
                  url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix', 
                  url_rules='https://ak.graueneko.xyz/akmaterial.json', 
                  path_stats='data/matrix', 
@@ -13,6 +13,8 @@ class MaterialPlanning(object):
         """
         Object initialization.
         Args:
+            filter_freq: int or None. The lowest frequence that we consider.
+                No filter will be applied if None.
             url_stats: string. url to the dropping rate stats data.
             url_rules: string. url to the composing rules data.
             path_stats: string. local path to the dropping rate stats data.
@@ -24,6 +26,12 @@ class MaterialPlanning(object):
             print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
             material_probs, convertion_rules = request_data(url_stats, url_rules, path_stats, path_rules)
             print('done.')
+
+        if filter_freq:
+            for dct in material_probs['matrix']:
+                if dct['times']<filter_freq:
+                    dct['quantity'] = 0
+
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
             
                 
@@ -184,12 +192,15 @@ class MaterialPlanning(object):
         print('Looting at stages:')
         for i,t in enumerate(n_looting):
             if t > 1.0:
-                print(self.stage_array[i] + ', %d times, available items: ' %int(t) + ' '.join(self.item_array[np.where(self.probs_matrix[i]>0.1)]))
+                target_items = np.where(self.probs_matrix[i]*t>=1)[0]
+                display_lst = [self.item_array[idx]+' (%d)'%int(self.probs_matrix[i, idx]*t) for idx in target_items]
+                print(self.stage_array[i] + ' (%d times) ===> ' %int(t) + ', '.join(display_lst))
         print('Synthesize items:')
         for i,t in enumerate(n_convertion):
             if t > 1.0:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
-                print(target_item + ' for %d times from: ' %int(t) +  ' '.join([k+' (%d) '%(v*int(t)) for k,v in self.convertions_dct[target_item].items()]))
+                display_lst = [k+' (%d) '%(v*int(t)) for k,v in self.convertions_dct[target_item].items()]
+                print(target_item + ' (%d) <=== ' %int(t) +  ', '.join(display_lst))
 
 def Cartesian_sum(arr1, arr2):
     arr_r = []
