@@ -46,15 +46,9 @@ python setup.py install
 	```
 你将看到如下输出
 
-
-	> Optimization terminated successfully, Computed in 0.0446 seconds,
-	
-	> Estimated total cost 1872 <span style="color:red"><-- 预计的总共体力消耗</span>
-	
-	> Looting at stages :  <span style="color:red"><-- 你要刷哪些副本以及刷多少次</span>
-	
-	>
-	```
+	Optimization terminated successfully, Computed in 0.0446 seconds,
+	Estimated total cost 1872 <span style="color:red"><-- 预计的总共体力消耗</span>
+	Looting at stages :  <span style="color:red"><-- 你要刷哪些副本以及刷多少次</span>
 	3-1, 5 times, available items: 代糖 糖 异铁 双酮 酮凝集 酮凝集组
 	4-10, 9 times, available items: 源岩 固源岩 装置 全新装置 赤金
 	GT-5, 11 times, available items: 扭转醇
@@ -62,12 +56,7 @@ python setup.py install
 	1-7, 59 times, available items: 源岩 固源岩 基础作战记录
 	2-10, 47 times, available items: 代糖 糖 双酮 酮凝集 RMA70-12 基础作战记录
 	S3-1, 12 times, available items: 代糖 糖 异铁碎片 双酮 酮凝集 初级作战记录
-	```
-	
-	> Synthesize items: <span style="color:red"><-- 你要合成哪些材料以及合成多少次</span>
-	
-	>
-	```
+	Synthesize items: <span style="color:red"><-- 你要合成哪些材料以及合成多少次</span>
 	双极纳米片 for 3 times from: 改量装置 (3)  白马醇 (6) 
 	RMA70-24 for 4 times from: RMA70-12 (4)  固源岩组 (8)  酮凝集组 (4) 
 	白马醇 for 8 times from: 扭转醇 (8)  糖组 (8)  RMA70-12 (8) 
@@ -78,7 +67,6 @@ python setup.py install
 	酮凝集 for 4 times from: 双酮 (12) 
 	糖 for 4 times from: 代糖 (12) 
 	固源岩 for 3 times from: 源岩 (9) 
-	```
 	
 ***2. Jupyter Notebook 或在你自己的代码中调用***
 
