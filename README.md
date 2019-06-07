@@ -47,32 +47,39 @@ python setup.py install
 	你将看到如下输出
 	
 	```
-	Optimization terminated successfully, Computed in 0.0446 seconds,
-	Estimated total cost 1872 <----------------- 预计的总共体力消耗
-	Looting at stages:  <----------------- 你要刷哪些副本以及刷多少次
-	3-1, 5 times, available items: 代糖 糖 异铁 双酮 酮凝集 酮凝集组
-	4-10, 9 times, available items: 源岩 固源岩 装置 全新装置 赤金
-	GT-5, 11 times, available items: 扭转醇
-	GT-6, 7 times, available items: 研磨石
-	1-7, 59 times, available items: 源岩 固源岩 基础作战记录
-	2-10, 47 times, available items: 代糖 糖 双酮 酮凝集 RMA70-12 基础作战记录
-	S3-1, 12 times, available items: 代糖 糖 异铁碎片 双酮 酮凝集 初级作战记录
-	Synthesize items: <----------------- 你要合成哪些材料以及合成多少次
-	双极纳米片 for 3 times from: 改量装置 (3)  白马醇 (6) 
-	RMA70-24 for 4 times from: RMA70-12 (4)  固源岩组 (8)  酮凝集组 (4) 
-	白马醇 for 8 times from: 扭转醇 (8)  糖组 (8)  RMA70-12 (8) 
-	改量装置 for 3 times from: 全新装置 (3)  固源岩组 (6)  研磨石 (3) 
-	酮凝集组 for 2 times from: 酮凝集 (8) 
-	糖组 for 7 times from: 糖 (28) 
-	固源岩组 for 16 times from: 固源岩 (80) 
-	酮凝集 for 4 times from: 双酮 (12) 
-	糖 for 4 times from: 代糖 (12) 
-	固源岩 for 3 times from: 源岩 (9) 
+	Optimization terminated successfully, Computed in 0.0324 seconds,
+	Estimated total cost 1598 <----（预计消耗的总体力）
+	Loot at following stages: <----（以下是你要刷哪些副本以及次数）
+	Stage 3-1 (5 times) ===> 双酮(1), 酮凝集组(2)
+	Stage 4-10 (9 times) ===> 源岩(2), 固源岩(3), 全新装置(2), 赤金(1)
+	Stage 1-7 (59 times) ===> 源岩(7), 固源岩(75), 破损装置(2), 酯原料(4), 代糖(4), 异铁碎片(2), 双酮(3), 赤金(5), 基础作战记录(65)
+	Stage 2-10 (47 times) ===> 代糖(7), 糖(6), 异铁碎片(4), 异铁(4), 双酮(6), 酮凝集(4), RMA70-12(13), 基础作战记录(5), 初级作战记录(4)
+	Stage S3-1 (12 times) ===> 代糖(1), 糖(19), 异铁碎片(1), 异铁(1), 双酮(1), 酮凝集(2), 初级作战记录(2)
+	Synthesize following items: <----（以下是你要合成哪些材料以及次数）
+	双极纳米片(4) <=== 改量装置(4) , 白马醇(8) 
+	RMA70-24(5) <=== RMA70-12(5) , 固源岩组(10) , 酮凝集组(5) 
+	白马醇(8) <=== 扭转醇(8) , 糖组(8) , RMA70-12(8) 
+	改量装置(3) <=== 全新装置(3) , 固源岩组(6) , 研磨石(3) 
+	酮凝集组(2) <=== 酮凝集(8) 
+	糖组(7) <=== 糖(28) 
+	固源岩组(16) <=== 固源岩(80) 
+	酮凝集(4) <=== 双酮(12) 
+	糖(4) <=== 代糖(12) 
+	固源岩(3) <=== 源岩(9)
 	```
+	
+* 由于数据中记录较少的副本掉落偏差较大，因此代码中默认过滤掉统计频次低于20的记录，如需修改，可在 *main.py* 中将第6行改为
+
+```
+    mp = MaterialPlanning(filter_freq=n)
+```
+n为你想自定义的频次下限，0则为不过滤。
+
 	
 ***2. Jupyter Notebook 或在你自己的代码中调用***
 
 参考*demo.ipynb*中的用法。
+
 
 ***3. 更新数据***
 
@@ -80,6 +87,7 @@ python setup.py install
 	```
 	python main.py
 	```
+
 
 
 ### 鸣谢 - Acknowledgement
