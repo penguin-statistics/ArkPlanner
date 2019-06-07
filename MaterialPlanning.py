@@ -194,13 +194,13 @@ class MaterialPlanning(object):
             if t > 1.0:
                 target_items = np.where(self.probs_matrix[i]*t>=1)[0]
                 display_lst = [self.item_array[idx]+' (%d)'%int(self.probs_matrix[i, idx]*t) for idx in target_items]
-                print(self.stage_array[i] + ' (%d times) ===> ' %int(t) + ', '.join(display_lst))
+                print(self.stage_array[i] + ' (%d times) ===> '%int(t) + ', '.join(display_lst))
         print('Synthesize items:')
         for i,t in enumerate(n_convertion):
             if t > 1.0:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
                 display_lst = [k+' (%d) '%(v*int(t)) for k,v in self.convertions_dct[target_item].items()]
-                print(target_item + ' (%d) <=== ' %int(t) +  ', '.join(display_lst))
+                print(target_item + ' (%d) <=== '%int(t) +  ', '.join(display_lst))
 
 def Cartesian_sum(arr1, arr2):
     arr_r = []
