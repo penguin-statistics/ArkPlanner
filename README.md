@@ -45,7 +45,8 @@ python setup.py install
 	python main.py
 	```
 	你将看到如下输出
-
+	
+	```
 	Optimization terminated successfully, Computed in 0.0446 seconds,
 	Estimated total cost 1872 <----------------- 预计的总共体力消耗
 	Looting at stages:  <----------------- 你要刷哪些副本以及刷多少次
@@ -67,6 +68,7 @@ python setup.py install
 	酮凝集 for 4 times from: 双酮 (12) 
 	糖 for 4 times from: 代糖 (12) 
 	固源岩 for 3 times from: 源岩 (9) 
+	```
 	
 ***2. Jupyter Notebook 或在你自己的代码中调用***
 
