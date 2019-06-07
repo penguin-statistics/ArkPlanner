@@ -44,7 +44,7 @@ python setup.py install
 	```
 	python main.py
 	```
-你将看到如下输出
+	你将看到如下输出
 
 	Optimization terminated successfully, Computed in 0.0446 seconds,
 	Estimated total cost 1872 <----------------- 预计的总共体力消耗
