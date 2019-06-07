@@ -74,6 +74,12 @@ python setup.py install
 
 参考*demo.ipynb*中的用法。
 
+***3. 更新数据***
+
+如果发生官方暗改掉率或更新新的材料等情况，可直接删除文件夹data，并重新运行
+	```
+	python main.py
+	```
 
 
 ### 鸣谢 - Acknowledgement
