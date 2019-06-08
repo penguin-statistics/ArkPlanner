@@ -6,7 +6,7 @@ class MaterialPlanning(object):
     
     def __init__(self, 
                  filter_freq=20,
-                 url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix', 
+                 url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_code=true&show_item_name=true', 
                  url_rules='https://ak.graueneko.xyz/akmaterial.json', 
                  path_stats='data/matrix', 
                  path_rules='data/akmaterial.json'):
