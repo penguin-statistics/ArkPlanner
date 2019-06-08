@@ -38,6 +38,8 @@ python setup.py install
 
 * 找到 *required.txt* 以及 *owned.txt* 两个文件，在 *required.txt* 中列出你所需要的材料以及数量，材料和数量间空格隔开，多个材料用回车隔开，在 *owned.txt* 中列出你现有的材料及数目，格式同上。
 
+    Find and edit the files *required.txt* and *owned.txt*. List the items you need and you already have. Seperate item name and quatity by space and two items by return. For example:
+
     例如：
     
     ```
@@ -46,11 +48,15 @@ python setup.py install
     ```
 
 * 修改完成后保存并关闭，在命令行中运行
+    
+    Then save the files and run the following command in your command line:
 
     ```
     python main.py
     ```
     你将看到如下输出
+    
+    You shall find some outputs like this:
     
     ```
     Optimization terminated successfully, Computed in 0.0324 seconds,
@@ -76,21 +82,30 @@ python setup.py install
     
 * 由于数据中记录较少的副本掉落偏差较大，因此代码中默认过滤掉统计频次低于20的记录，如需修改，可在 *main.py* 中将第6行改为
 
+    My code filters the records by their frequency from Penguin-Stats since records with low frequency may cause bias. To customize your filter, replace line 6 in *main.py* with
+
     ```
         mp = MaterialPlanning(filter_freq=n)
     ```
     
     n为你想自定义的频次下限，0则为不过滤。
+    
+    where n is the lower bound of acceptable frequence. If n=0, no filter will be applied.
 
     
 ***2. Jupyter Notebook 或在你自己的代码中调用***
 
 参考*demo.ipynb*中的用法。
 
+Please refer to *demo.ipynb*.
+
 
 ***3. 更新数据***
 
-如果发生官方暗改掉率或更新新的材料等情况，可直接删除文件夹data，并重新运行
+如果发生官方暗改掉率或材料、地图更新等情况，可直接删除文件夹data，并重新运行。
+
+If new items or stages are updated, delete the data folder and run the following command as usual.
+
     ```
     python main.py
     ```
