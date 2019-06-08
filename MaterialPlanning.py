@@ -158,6 +158,7 @@ class MaterialPlanning(object):
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
         """
+        print(demand_lst)
         status_dct = {0: 'Optimization terminated successfully, ',
                                     1: 'Iteration limit reached, ',
                                     2: 'Problem appears to be infeasible, ',
@@ -165,7 +166,8 @@ class MaterialPlanning(object):
         
         solution = linprog(c=np.array(self.equav_cost_lst),
                                           A_ub=-self.equav_matrix.T,
-                                          b_ub=-np.array(demand_lst))
+                                          b_ub=-np.array(demand_lst),
+                                          method='simplex')
         x, fun, status = solution.x, solution.fun, solution.status
         
         n_looting = x[:len(self.cost_lst)]
