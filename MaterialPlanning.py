@@ -6,7 +6,7 @@ class MaterialPlanning(object):
     
     def __init__(self, 
                  filter_freq=20,
-                 url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_code=true&show_item_name=true', 
+                 url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_details=true&show_item_details=true',
                  url_rules='https://ak.graueneko.xyz/akmaterial.json', 
                  path_stats='data/matrix', 
                  path_rules='data/akmaterial.json'):
@@ -45,28 +45,29 @@ class MaterialPlanning(object):
                 Keys of instances: ["id", "name", "level", "source", "madeof"].
         """
         # To count items and stages.
+        additional_items = {'30135': u'D32钢', '30125': u'双极纳米片', '30115': u'聚合剂'}
+
         item_dct = {}
         stage_dct = {}
         for dct in material_probs['matrix']:
-            item_dct[dct['itemID']]=dct['itemName']
-            stage_dct[dct['stageID']]=dct['stageCode']
-        self.item_dct_rv = {v:k for k,v in item_dct.items()}
+            item_dct[dct['item']['itemId']]=dct['item']['name']
+            stage_dct[dct['stage']['code']]=dct['stage']['code']
+        item_dct.update(additional_items)
         
-        # To unify the item identities from the two sources.
-        for dct in convertion_rules:
-            try:
-                dct['id'] = self.item_dct_rv[dct['name']]
-            except:
-                self.item_dct_rv[dct['name']] = len(self.item_dct_rv)-1
-                item_dct[len(item_dct)-1] = dct['name']
-                dct['id'] = self.item_dct_rv[dct['name']]
-            
         # To construct mapping from id to item names.
-        self.item_array = np.empty(len(item_dct)-1, dtype='U25')
+        item_array = []
+        item_id_array = []
         for k,v in item_dct.items():
-            if k>= 0:
-                self.item_array[k] = v
-                
+            try:
+                float(k)
+                item_array.append(v)
+                item_id_array.append(k)
+            except:
+                pass
+        self.item_array = np.array(item_array)
+        self.item_id_array = np.array(item_id_array)
+        self.item_dct_rv = {v:k for k,v in enumerate(item_array)}
+
         # To construct mapping from stage id to stage names and vice versa.
         stage_array = []
         for k,v in stage_dct.items():
@@ -75,12 +76,15 @@ class MaterialPlanning(object):
         self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
         
         # To format dropping records into sparse probability matrix
-        probs_matrix = np.zeros([len(self.stage_array), len(self.item_array)])
-        cost_lst = np.zeros(len(self.stage_array))
+        probs_matrix = np.zeros([len(stage_array), len(item_array)])
+        cost_lst = np.zeros(len(stage_array))
         for dct in material_probs['matrix']:
-            if dct['itemID'] >= 0:
-                probs_matrix[self.stage_dct_rv[dct['stageCode']], dct['itemID']] = dct['quantity']/float(dct['times'])
-                cost_lst[self.stage_dct_rv[dct['stageCode']]] = dct['apCost']
+            try:
+                float(dct['item']['itemId'])
+                probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
+                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
+            except:
+                pass
                 
         # To build equavalence relationship from convert_rule_dct.
         self.convertions_dct = {}
@@ -91,7 +95,7 @@ class MaterialPlanning(object):
             if len(rule['madeof'])>0:
                 self.convertions_dct[rule['name']] = rule['madeof']
                 convertion = np.zeros(len(self.item_array))
-                convertion[rule['id']] = 1
+                convertion[self.item_dct_rv[rule['name']]] = 1
                 for iname in rule['madeof']:
                     convertion[self.item_dct_rv[iname]] -= rule['madeof'][iname]
                 convertion_matrix.append(convertion)
@@ -193,7 +197,8 @@ class MaterialPlanning(object):
         for i,t in enumerate(n_looting):
             if t > 1.0:
                 target_items = np.where(self.probs_matrix[i]*t>=1)[0]
-                display_lst = [self.item_array[idx]+'(%d)'%int(self.probs_matrix[i, idx]*t) for idx in target_items]
+                display_lst = [self.item_array[idx]+'(%d)'%int(self.probs_matrix[i, idx]*t) 
+                               for idx in target_items if len(self.item_id_array[idx])==5]
                 print('Stage ' + self.stage_array[i] + ' (%d times) ===> '%int(t) + ', '.join(display_lst))
         print('Synthesize following items:')
         for i,t in enumerate(n_convertion):
