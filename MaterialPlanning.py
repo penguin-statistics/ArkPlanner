@@ -158,7 +158,6 @@ class MaterialPlanning(object):
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
         """
-        print(demand_lst)
         status_dct = {0: 'Optimization terminated successfully, ',
                                     1: 'Iteration limit reached, ',
                                     2: 'Problem appears to be infeasible, ',
@@ -184,7 +183,7 @@ class MaterialPlanning(object):
                 requirement_dct: dictionary. Contain only required items with their numbers.
                 deposit_dct: dictionary. Contain only owned items with their numbers.
         """
-        demand_lst = np.zeros(len(self.item_array))+1e-5
+        demand_lst = np.zeros(len(self.item_array))+1e-8
         for k, v in requirement_dct.items():
             demand_lst[self.item_dct_rv[k]] = v
         for k, v in deposited_dct.items():
@@ -197,17 +196,17 @@ class MaterialPlanning(object):
         print('Estimated total cost', int(cost))
         print('Loot at following stages:')
         for i,t in enumerate(n_looting):
-            if t > 1.0:
-                target_items = np.where(self.probs_matrix[i]*t>=1)[0]
-                display_lst = [self.item_array[idx]+'(%d)'%int(self.probs_matrix[i, idx]*t) 
+            if t >= 0.5:
+                target_items = np.where(self.probs_matrix[i]>=0.1)[0]
+                display_lst = [self.item_array[idx]+'(%s)'%float2str(self.probs_matrix[i, idx]*int(t+0.5)) 
                                for idx in target_items if len(self.item_id_array[idx])==5]
-                print('Stage ' + self.stage_array[i] + ' (%d times) ===> '%int(t) + ', '.join(display_lst))
+                print('Stage ' + self.stage_array[i] + ' (%s times) ===> '%float2str(t) + ', '.join(display_lst))
         print('Synthesize following items:')
         for i,t in enumerate(n_convertion):
-            if t > 1.0:
+            if t >= 0.5:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
-                display_lst = [k+'(%d) '%(v*int(t)) for k,v in self.convertions_dct[target_item].items()]
-                print(target_item + '(%d) <=== '%int(t) +  ', '.join(display_lst))
+                display_lst = [k+'(%d) '%(v*int(t+0.5)) for k,v in self.convertions_dct[target_item].items()]
+                print(target_item + '(%d) <=== '%int(t+0.5) +  ', '.join(display_lst))
 
 def Cartesian_sum(arr1, arr2):
     arr_r = []
@@ -215,6 +214,14 @@ def Cartesian_sum(arr1, arr2):
         arr_r.append(arr+arr2)
     arr_r = np.vstack(arr_r)
     return arr_r
+
+def float2str(x):
+
+    if x < 1.0:
+        out = '%.1f'%x
+    else:
+        out = '%d'%(int(x+0.5))
+    return out
 
 def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
     """
