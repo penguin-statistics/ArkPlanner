@@ -28,9 +28,11 @@ class MaterialPlanning(object):
             print('done.')
 
         if filter_freq:
+            filtered_probs = []
             for dct in material_probs['matrix']:
-                if dct['times']<filter_freq:
-                    dct['quantity'] = 0
+                if dct['times']>=filter_freq:
+                    filtered_probs.append(dct)
+            material_probs['matrix'] = filtered_probs
 
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
             
@@ -166,7 +168,7 @@ class MaterialPlanning(object):
         solution = linprog(c=np.array(self.equav_cost_lst),
                                           A_ub=-self.equav_matrix.T,
                                           b_ub=-np.array(demand_lst),
-                                          method='simplex')
+                                          method='interior-point')
         x, fun, status = solution.x, solution.fun, solution.status
         
         n_looting = x[:len(self.cost_lst)]
@@ -183,7 +185,7 @@ class MaterialPlanning(object):
                 requirement_dct: dictionary. Contain only required items with their numbers.
                 deposit_dct: dictionary. Contain only owned items with their numbers.
         """
-        demand_lst = np.zeros(len(self.item_array))+1e-8
+        demand_lst = np.zeros(len(self.item_array))
         for k, v in requirement_dct.items():
             demand_lst[self.item_dct_rv[k]] = v
         for k, v in deposited_dct.items():
