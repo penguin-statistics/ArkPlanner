@@ -194,6 +194,12 @@ class MaterialPlanning(object):
         stt = time.time()
         (n_looting, n_convertion), cost, status = self._get_plan_no_prioties(demand_lst)
 
+        if print_output:
+            print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
+
+        if status != 'Optimization terminated successfully, ':
+            raise ValueError(status)
+
         stages = []
         for i,t in enumerate(n_looting):
             if t >= 0.5:
@@ -226,7 +232,6 @@ class MaterialPlanning(object):
         }
 
         if print_output:
-            print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
             print('Estimated total cost', res['cost'])
             print('Loot at following stages:')
             for stage in stages:
