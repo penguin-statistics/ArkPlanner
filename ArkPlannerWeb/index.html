@@ -107,7 +107,6 @@
                 req.setRequestHeader("Content-Type", "application/json");
                 req.send(JSON.stringify(assemble_post_data()));
                 var result = JSON.parse(req.responseText);
-                console.log(result);
                 this.cost = result.cost;
                 this.stages = result.stages;
                 this.syntheses = result.syntheses;
