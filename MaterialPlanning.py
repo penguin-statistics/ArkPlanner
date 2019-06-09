@@ -176,9 +176,9 @@ class MaterialPlanning(object):
         strategy = (n_looting, n_convertion)
         
         return strategy, fun, status_dct[status]
-    
-    
-    def get_plan(self, requirement_dct, deposited_dct={}, prioty_dct=None):
+
+
+    def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None):
         """
         User API. Computing the material plan given requirements and owned items.
         Args:
@@ -190,25 +190,57 @@ class MaterialPlanning(object):
             demand_lst[self.item_dct_rv[k]] = v
         for k, v in deposited_dct.items():
             demand_lst[self.item_dct_rv[k]] -= v
-            
+        
         stt = time.time()
         (n_looting, n_convertion), cost, status = self._get_plan_no_prioties(demand_lst)
-        print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
-        
-        print('Estimated total cost', int(cost))
-        print('Loot at following stages:')
+
+        stages = []
         for i,t in enumerate(n_looting):
             if t >= 0.5:
                 target_items = np.where(self.probs_matrix[i]>=0.1)[0]
-                display_lst = [self.item_array[idx]+'(%s)'%float2str(self.probs_matrix[i, idx]*int(t+0.5)) 
-                               for idx in target_items if len(self.item_id_array[idx])==5]
-                print('Stage ' + self.stage_array[i] + ' (%s times) ===> '%float2str(t) + ', '.join(display_lst))
-        print('Synthesize following items:')
+                items = {self.item_array[idx]: float2str(self.probs_matrix[i, idx]*int(t+0.5))
+                for idx in target_items if len(self.item_id_array[idx])==5 }
+                stage = {
+                    "stage": self.stage_array[i],
+                    "count": float2str(t),
+                    "items": items
+                }
+                stages.append(stage)
+
+        syntheses = []
         for i,t in enumerate(n_convertion):
             if t >= 0.5:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
-                display_lst = [k+'(%d) '%(v*int(t+0.5)) for k,v in self.convertions_dct[target_item].items()]
-                print(target_item + '(%d) <=== '%int(t+0.5) +  ', '.join(display_lst))
+                materials = { k: v*int(t+0.5) for k,v in self.convertions_dct[target_item].items() }
+                synthesis = {
+                    "target": target_item,
+                    "count": int(t+0.5),
+                    "materials": materials
+                }
+                syntheses.append(synthesis)
+
+        res = {
+            "cost": int(cost),
+            "stages": stages,
+            "syntheses": syntheses
+        }
+
+        if print_output:
+            print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
+            print('Estimated total cost', res['cost'])
+            print('Loot at following stages:')
+            for stage in stages:
+                display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
+                print('Stage ' + stage['stage'] + '(%s times) ===> '%stage['count']
+                + ', '.join(display_lst))
+            print('Synthesize following items:')
+            for synthesis in syntheses:
+                display_lst = [k + '(%d) '%synthesis['materials'][k] for k in synthesis['materials']]
+                print(synthesis['target'] + '(%d) <=== '%synthesis['count']
+                + ', '.join(display_lst))
+
+        return res
+
 
 def Cartesian_sum(arr1, arr2):
     arr_r = []
