@@ -12,6 +12,10 @@
                     <h1 style="font-size: 150%">ArkPlanner - Alpha</h1>
                 </el-header>
                 <el-main>
+                    <div>
+                        <el-button type="primary" @click="export_dialog_visible = true">导出数据</el-button>
+                        <el-button type="primary" @click="import_dialog_visible = true">导入数据</el-button>
+                    </div>
                     <el-card class="box-card" v-for="mat_obj in mat_objs">
                         <div slot="header" class="clearfix">
                             <span>{{mat_obj.name}}</span>
@@ -52,6 +56,27 @@
                     </span>
                     <span slot="footer" class="dialog-footer">
                     <el-button type="primary" @click="dialog_visible = false">确定</el-button>
+                    </span>
+                </el-dialog>
+                
+                <el-dialog title="导入数据" :visible.sync="import_dialog_visible" width="60%">
+                    <span>
+                       <div>JSON String<el-input v-model='import_text'></el-input>
+                       <el-button type="primary" v-on:click="importData">导入</el-button>
+                       </div>
+                    </span>
+                    <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="import_dialog_visible = false">取消</el-button>
+                    </span>
+                </el-dialog>
+                
+                <el-dialog title="导出数据" :visible.sync="export_dialog_visible" width="60%">
+                    <span>
+                       <div>JSON String:</div>
+                       <div>{{JSON.stringify(mat_objs)}}</div>
+                    </span>
+                    <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="export_dialog_visible = false">关闭</el-button>
                     </span>
                 </el-dialog>
             </el-container>
@@ -97,7 +122,10 @@
               cost: 0,
               stages: [],
               syntheses: [],
-              dialog_visible: false
+              dialog_visible: false,
+              import_dialog_visible: false,
+              export_dialog_visible: false,
+              import_text: '',
           }
         },
         methods: {
@@ -111,7 +139,30 @@
                 this.stages = result.stages;
                 this.syntheses = result.syntheses;
                 this.dialog_visible = true;
-            }
+            },
+            importData: function() {
+                var import_obj;
+                var new_mat_objs = this.mat_objs;
+                try {
+                    import_obj = JSON.parse(this.import_text);
+                    materials_list.forEach((name,index)=>{
+                        var temp = import_obj.find(x=>x.name === name);
+                        if(temp){
+                            if(temp.need){
+                                new_mat_objs[index].need= temp.need;
+                            }
+                            if(temp.have){
+                                new_mat_objs[index].hvae= temp.have;
+                            }
+                        }
+                    });
+                    this.mat_objs = new_mat_objs;
+                }
+                catch(e){
+                    console.log('错误:', e);
+                };
+                this.import_dialog_visible = false;
+            },
         }
       });
     </script>
