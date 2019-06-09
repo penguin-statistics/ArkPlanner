@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>ArkPlanner</title>
+        <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    </head>
+    <body>
+        <div id='app'>
+            <el-container>
+                <el-header>
+                    <h1 style="font-size: 150%">ArkPlanner - Alpha</h1>
+                </el-header>
+                <el-main>
+                    <div>
+                        <el-button type="primary" @click="export_dialog_visible = true">导出数据</el-button>
+                        <el-button type="primary" @click="import_dialog_visible = true">导入数据</el-button>
+                    </div>
+                    <el-card class="box-card" v-for="mat_obj in mat_objs">
+                        <div slot="header" class="clearfix">
+                            <span>{{mat_obj.name}}</span>
+                        </div>
+                        <div>
+                            <div>需要<el-input v-model='mat_obj.need'></el-input></div>
+                            <div>已有<el-input v-model='mat_obj.have'></el-input></div>
+                        </div>
+                    </el-card>
+                    <div><el-button type="primary" v-on:click="analyze">开始计算</el-button>
+                    </div>
+                </el-main>
+                <el-footer>
+                    <p>
+                    Backend by <el-link href='https://github.com/ycremar'>@ycremar</el-link>,
+                    frontend by <el-link href='https://github.com/invisiblearts'>@invisiblearts</el-link>.
+                    See <el-link href='https://github.com/ycremar/ArkPlanner'>GitHub</el-link> for details.
+                    </p>
+                </el-footer>
+
+                <el-dialog title="计算结果" :visible.sync="dialog_visible" width="60%">
+                    <span>
+                        <p>预计需要体力：{{cost}}</p>
+                        <p>关卡列表：</p>
+                        <p v-for="stage in stages">
+                            {{stage.stage}}: {{stage.count}}次，获得
+                            <span v-for='key in Object.keys(stage.items)'>
+                                {{key}}({{stage.items[key]}})
+                            </span>
+                        </p>
+                        <p>合成列表：</p>
+                        <p v-for="synthesis in syntheses">
+                            {{synthesis.target}}({{synthesis.count}}): 
+                            <span v-for="key in Object.keys(synthesis.materials)">
+                                {{key}}({{synthesis.materials[key]}}) 
+                            </span>
+                        </p>
+                    </span>
+                    <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="dialog_visible = false">确定</el-button>
+                    </span>
+                </el-dialog>
+                
+                <el-dialog title="导入数据" :visible.sync="import_dialog_visible" width="60%">
+                    <span>
+                       <div>JSON String<el-input v-model='import_text'></el-input>
+                       <el-button type="primary" v-on:click="importData">导入</el-button>
+                       </div>
+                    </span>
+                    <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="import_dialog_visible = false">取消</el-button>
+                    </span>
+                </el-dialog>
+                
+                <el-dialog title="导出数据" :visible.sync="export_dialog_visible" width="60%">
+                    <span>
+                       <div>JSON String:</div>
+                       <div>{{JSON.stringify(mat_objs)}}</div>
+                    </span>
+                    <span slot="footer" class="dialog-footer">
+                    <el-button type="primary" @click="export_dialog_visible = false">关闭</el-button>
+                    </span>
+                </el-dialog>
+            </el-container>
+        </div>
+    </body>
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script>
+      var materials_list = ['D32钢','双极纳米片','聚合剂','RMA70-24','五水研磨石','三水锰矿','白马醇',
+      '改量装置','酮阵列','异铁块','聚酸酯块','糖聚块','提纯源岩','全新装置','酮凝集组','异铁组','聚酸酯组',
+      '糖组','固源岩组','装置','酮凝集','异铁','聚酸酯','糖','固源岩','破损装置','双酮','异铁碎片',
+      '酯原料','代糖','源岩','扭转醇','研磨石','轻锰矿','RMA70-12'];
+      var materials = new Array();
+      for (i = 0; i < materials_list.length; i++) {
+            materials[i] = {
+                name: materials_list[i],
+                need: '',
+                have: ''
+            }
+      }
+
+      var assemble_post_data = function() {
+        var obj = {
+            required: {},
+            owned: {}
+        };
+        for (i = 0; i < materials.length; i++) {
+            var mat = materials[i];
+            var name = mat.name;
+            if (parseInt(mat.need) > 0)
+                obj.required[name] = parseInt(mat.need);
+            if (parseInt(mat.have) > 0)
+                obj.owned[name] = parseInt(mat.have);
+        }
+        return obj;
+      };
+
+      new Vue({
+        el: '#app',
+        data: function() {
+          return {
+              mat_objs: materials,
+              cost: 0,
+              stages: [],
+              syntheses: [],
+              dialog_visible: false,
+              import_dialog_visible: false,
+              export_dialog_visible: false,
+              import_text: '',
+          }
+        },
+        methods: {
+            analyze: function() {
+                var req = new XMLHttpRequest;
+                req.open("POST", 'plan/', false);
+                req.setRequestHeader("Content-Type", "application/json");
+                req.send(JSON.stringify(assemble_post_data()));
+                var result = JSON.parse(req.responseText);
+                this.cost = result.cost;
+                this.stages = result.stages;
+                this.syntheses = result.syntheses;
+                this.dialog_visible = true;
+            },
+            importData: function() {
+                var import_obj;
+                var new_mat_objs = this.mat_objs;
+                try {
+                    import_obj = JSON.parse(this.import_text);
+                    materials_list.forEach((name,index)=>{
+                        var temp = import_obj.find(x=>x.name === name);
+                        if(temp){
+                            if(temp.need){
+                                new_mat_objs[index].need= temp.need;
+                            }
+                            if(temp.have){
+                                new_mat_objs[index].hvae= temp.have;
+                            }
+                        }
+                    });
+                    this.mat_objs = new_mat_objs;
+                }
+                catch(e){
+                    console.log('错误:', e);
+                };
+                this.import_dialog_visible = false;
+            },
+        }
+      });
+    </script>
+    <style>
+        .el-card {
+            width: 290px;
+            display: inline-block;
+            margin: 10px;
+        }
+        .el-input {
+            width: auto;
+            margin: 3px;
+        }
+        .el-button {
+            margin: 10px;
+        }
+        .el-link {
+            vertical-align: baseline;
+            font-size: 100%;
+        }
+    </style>
+</html>
