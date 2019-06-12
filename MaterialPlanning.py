@@ -133,7 +133,7 @@ class MaterialPlanning(object):
         self.equav_matrix = np.vstack([probs_matrix, convertion_matrix])
         
         
-    def update(self, url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix', 
+    def update(self, filter_freq=20, filter_stages=[], url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_details=true&show_item_details=true', 
                  url_rules='https://ak.graueneko.xyz/akmaterial.json', 
                  path_stats='data/matrix', 
                  path_rules='data/akmaterial.json'):
@@ -149,7 +149,14 @@ class MaterialPlanning(object):
         material_probs, convertion_rules = request_data(url_stats, url_rules, path_stats, path_rules)
         print('done.')
         
-        self.__init__(convert_rules_dct, cost_lst, looting_lst)
+        if filter_freq:
+            filtered_probs = []
+            for dct in material_probs['matrix']:
+                if dct['times']>=filter_freq and dct['stage']['code'] not in filter_stages:
+                    filtered_probs.append(dct)
+            material_probs['matrix'] = filtered_probs
+
+        self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
 
 
     def _get_plan_no_prioties(self, demand_lst):
