@@ -15,9 +15,9 @@ ArkPlanner is a tiny python tool for the mobile game Arknight. The variety of it
 
 ***1. 环境配置 - Environment requirements***
 
-需要安装Python 3.5以上版本。Windows系统可通过[此链接](https://www.anaconda.com/distribution/)安装Anaconda。强烈推荐使用Jupyter notebook，详情请百度。
+需要安装Python 3.5以上版本。Web 服务器则需要 3.6 以上。Windows系统可通过[此链接](https://www.anaconda.com/distribution/)安装Anaconda。强烈推荐使用Jupyter notebook，详情请百度。
 
-Python >= 3.5 Required. For Windows users, I recommend installing [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommended. Google it for more details.
+Python >= 3.5 (3.6 for web server) Required. For Windows users, I recommend installing [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommended. Google it for more details.
 
 ***2. 安装 - Installation***
 
@@ -99,8 +99,16 @@ python setup.py install
 
 Please refer to *demo.ipynb*.
 
+***3. 运行 Web 服务器***
+`python server.py` 将在 127.0.0.1 监听 8000 端口，可供调试。
 
-***3. 更新数据***
+然而，对于生产环境，建议使用`python -m sanic server.app --host=<your_host> --port=<your_port> --workers=<workers_num>`，以获得更好的性能和灵活性。
+
+For debugging, simply run `python server.py`, which spins up a server listening at `http://127.0.0.1:8000`.
+
+For deployment, however, `python -m sanic server.app --host=<your_host> --port=<your_port> --workers=<workers_num>` is recommended for better performance and flexibility.
+
+***4. 更新数据***
 
 如果发生官方暗改掉率或材料、地图更新等情况，可直接删除文件夹data，并重新运行。
 
