@@ -23,6 +23,7 @@ async def plan(request):
     try:
         if time.time() - last_updated > 60 * 60 * 12:
             mp.update()
+            last_updated = time.time()
         dct = mp.get_plan(required_dct, owned_dct, False)
     except ValueError as e:
         return response.json({"error": True, "reason": str(e)})
