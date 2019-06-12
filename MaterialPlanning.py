@@ -6,6 +6,7 @@ class MaterialPlanning(object):
     
     def __init__(self, 
                  filter_freq=20,
+                 filter_stages=[],
                  url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_details=true&show_item_details=true',
                  url_rules='https://ak.graueneko.xyz/akmaterial.json', 
                  path_stats='data/matrix', 
@@ -30,7 +31,7 @@ class MaterialPlanning(object):
         if filter_freq:
             filtered_probs = []
             for dct in material_probs['matrix']:
-                if dct['times']>=filter_freq:
+                if dct['times']>=filter_freq and dct['stage']['code'] not in filter_stages:
                     filtered_probs.append(dct)
             material_probs['matrix'] = filtered_probs
 
@@ -144,10 +145,10 @@ class MaterialPlanning(object):
             path_stats: string. local path to the dropping rate stats data.
             path_rules: string. local path to the composing rules data.
         """
-        try:
-            material_probs, convertion_rules = load_data(path_stats, path_rules)
-        except:
-            material_probs, convertion_rules = request_data(url_stats, url_rules)
+        print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
+        material_probs, convertion_rules = request_data(url_stats, url_rules, path_stats, path_rules)
+        print('done.')
+        
         self.__init__(convert_rules_dct, cost_lst, looting_lst)
 
 
@@ -202,10 +203,10 @@ class MaterialPlanning(object):
 
         stages = []
         for i,t in enumerate(n_looting):
-            if t >= 0.5:
-                target_items = np.where(self.probs_matrix[i]>=0.1)[0]
-                items = {self.item_array[idx]: float2str(self.probs_matrix[i, idx]*int(t+0.5))
-                for idx in target_items if len(self.item_id_array[idx])==5 }
+            if t >= 0.1:
+                target_items = np.where(self.probs_matrix[i]>=0.05)[0]
+                items = {self.item_array[idx]: float2str(self.probs_matrix[i, idx]*t)
+                for idx in target_items if len(self.item_id_array[idx])==5}
                 stage = {
                     "stage": self.stage_array[i],
                     "count": float2str(t),
@@ -215,12 +216,21 @@ class MaterialPlanning(object):
 
         syntheses = []
         for i,t in enumerate(n_convertion):
-            if t >= 0.5:
+            if t >= 0.1:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
-                materials = { k: v*int(t+0.5) for k,v in self.convertions_dct[target_item].items() }
+                materials = { k: str(v*int(t+0.9)) for k,v in self.convertions_dct[target_item].items() }
                 synthesis = {
                     "target": target_item,
-                    "count": int(t+0.5),
+                    "count": str(int(t+0.9)),
+                    "materials": materials
+                }
+                syntheses.append(synthesis)
+            elif t >= 0.01:
+                target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
+                materials = { k: '%.1f'%(v*t) for k,v in self.convertions_dct[target_item].items() }
+                synthesis = {
+                    "target": target_item,
+                    "count": '%.1f'%t,
                     "materials": materials
                 }
                 syntheses.append(synthesis)
@@ -240,8 +250,8 @@ class MaterialPlanning(object):
                 + ', '.join(display_lst))
             print('Synthesize following items:')
             for synthesis in syntheses:
-                display_lst = [k + '(%d) '%synthesis['materials'][k] for k in synthesis['materials']]
-                print(synthesis['target'] + '(%d) <=== '%synthesis['count']
+                display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
+                print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
 
         return res
@@ -254,12 +264,12 @@ def Cartesian_sum(arr1, arr2):
     arr_r = np.vstack(arr_r)
     return arr_r
 
-def float2str(x):
+def float2str(x, offset=0.5):
 
     if x < 1.0:
         out = '%.1f'%x
     else:
-        out = '%d'%(int(x+0.5))
+        out = '%d'%(int(x+offset))
     return out
 
 def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
