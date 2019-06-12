@@ -13,6 +13,7 @@ last_updated = time.time()
 
 @app.route("/plan", methods=['POST'])
 async def plan(request):
+    global last_updated
     try:
         input_data = request.json
         owned_dct = input_data["owned"]
