@@ -1,0 +1,3 @@
+[submodule "ArkPlannerWeb"]
+	path = ArkPlannerWeb
+	url = https://github.com/invisiblearts/ArkPlanner-FrontEnd.git
