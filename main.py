@@ -1,5 +1,5 @@
 import sys, codecs
-from MaterialPlanning import MaterialPlanning
+from MaterialPlanning import *
 
 if __name__ == '__main__':
 
@@ -19,5 +19,5 @@ if __name__ == '__main__':
         owned_dct = {}
         for line in f.readlines():
             owned_dct [line.split(' ')[0]] = int(line.split(' ')[1])
-            
-    mp.get_plan(required_dct, owned_dct)
+    
+    mp.get_plan(required_dct, owned_dct, outcome=False)
