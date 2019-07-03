@@ -285,6 +285,15 @@ class MaterialPlanning(object):
                 }
                 syntheses.append(synthesis)
 
+        values = []
+        for i,item in enumerate(self.item_array):
+            if len(self.item_id_array[i])==5:
+                item_value = {
+                    "item": item,
+                    "value": '%.2f'%dual_solution[i]
+                }
+                values.append(item_value)
+
         res = {
             "cost": int(cost),
             "stages": stages,
@@ -306,9 +315,8 @@ class MaterialPlanning(object):
                 + ', '.join(display_lst))
 
             print('Items Values:')
-            for i,item in enumerate(self.item_array):
-                if len(self.item_id_array[i])==5:
-                    print(item+': %.2f'%dual_solution[i])
+            for value in values:
+                print(value['item'] + ': ' + value['value'])
 
         return res
 
