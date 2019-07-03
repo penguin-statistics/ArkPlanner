@@ -298,14 +298,17 @@ class MaterialPlanning(object):
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
                 print('Stage ' + stage['stage'] + '(%s times) ===> '%stage['count']
                 + ', '.join(display_lst))
+
             print('Synthesize following items:')
             for synthesis in syntheses:
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
                 print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
+
             print('Items Values:')
             for i,item in enumerate(self.item_array):
-                print(item+': %.2f'%dual_solution[i])
+                if len(self.item_id_array[i])==5:
+                    print(item+': %.2f'%dual_solution[i])
 
         return res
 
