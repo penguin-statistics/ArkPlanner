@@ -1,5 +1,5 @@
 import numpy as np
-import urllib.request, json, time, os, copy
+import urllib.request, json, time, os, copy, sys
 from scipy.optimize import linprog
 
 global penguin_url
@@ -152,7 +152,6 @@ class MaterialPlanning(object):
         self.equav_matrix = np.vstack([probs_matrix, convertion_matrix])
         self.equav_matrix_outc = np.vstack([probs_matrix, convertion_outc_matrix])
         
-        
     def update(self, 
                filter_freq=20,
                filter_stages=[],
@@ -168,7 +167,7 @@ class MaterialPlanning(object):
             path_stats: string. local path to the dropping rate stats data.
             path_rules: string. local path to the composing rules data.
         """
-        print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
+        print('Requesting data from web resources (i.e., penguin-stats.io)...', end=' ')
         material_probs, convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
         print('done.')
 
