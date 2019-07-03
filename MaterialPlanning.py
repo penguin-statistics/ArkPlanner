@@ -190,31 +190,33 @@ class MaterialPlanning(object):
         Returns:
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
-        """
-        status_dct = {0: 'Optimization terminated successfully, ',
-                      1: 'Iteration limit reached, ',
-                      2: 'Problem appears to be infeasible, ',
-                      3: 'Problem appears to be unbounded, '}
-        
+        """    
         A_ub = self.equav_matrix_outc if outcome else self.equav_matrix
+        excp_factor = 1.0
+        dual_factor = 1.0
 
-        solution = linprog(c=np.array(self.equav_cost_lst),
-                                          A_ub=-A_ub.T,
-                                          b_ub=-np.array(demand_lst),
-                                          method='interior-point')
+        while excp_factor>1e-5:
+            solution = linprog(c=np.array(self.equav_cost_lst),
+                               A_ub=-A_ub.T,
+                               b_ub=-np.array(demand_lst)*excp_factor,
+                               method='interior-point')
+            if solution.status != 4:
+                break
+            
+            excp_factor /= 10.0
 
-        dual_solution = linprog(c=-np.array(demand_lst),
-                                          A_ub=A_ub,
-                                          b_ub=np.array(self.equav_cost_lst),
-                                          method='interior-point')
+        while dual_factor>1e-5:
+            dual_solution = linprog(c=-np.array(demand_lst)*excp_factor*dual_factor,
+                                    A_ub=A_ub,
+                                    b_ub=np.array(self.equav_cost_lst),
+                                    method='interior-point')
+            if solution.status != 4:
+                break
 
-        x, fun, status = solution.x, solution.fun, solution.status
+            dual_factor /= 10.0
         
-        n_looting = x[:len(self.cost_lst)]
-        n_convertion = x[len(self.cost_lst):]
-        strategy = (n_looting, n_convertion)
         
-        return strategy, fun, status_dct[status], dual_solution.x
+        return solution, dual_solution.x, excp_factor
 
 
     def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None, outcome=False):
@@ -224,6 +226,12 @@ class MaterialPlanning(object):
                 requirement_dct: dictionary. Contain only required items with their numbers.
                 deposit_dct: dictionary. Contain only owned items with their numbers.
         """
+        status_dct = {0: 'Optimization terminated successfully. ',
+                      1: 'Iteration limit reached. ',
+                      2: 'Problem appears to be infeasible. ',
+                      3: 'Problem appears to be unbounded. ',
+                      4: 'Numerical difficulties encountered.'}
+
         demand_lst = np.zeros(len(self.item_array))
         for k, v in requirement_dct.items():
             demand_lst[self.item_dct_rv[k]] = v
@@ -231,13 +239,17 @@ class MaterialPlanning(object):
             demand_lst[self.item_dct_rv[k]] -= v
         
         stt = time.time()
-        (n_looting, n_convertion), cost, status, dual_solution = self._get_plan_no_prioties(demand_lst, outcome)
+        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome)
+        correction_factor = 1/excp_factor
+        x, cost, status = solution.x*correction_factor, solution.fun*correction_factor, solution.status
+        n_looting = x[:len(self.cost_lst)]
+        n_convertion = x[len(self.cost_lst):]
 
         if print_output:
-            print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
+            print(status_dct[status]+(' Computed in %.4f seconds,' %(time.time()-stt)))
 
-        if status != 'Optimization terminated successfully, ':
-            raise ValueError(status)
+        if status != 0:
+            raise ValueError(status_dct[status])
 
         stages = []
         for i,t in enumerate(n_looting):
