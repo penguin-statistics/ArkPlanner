@@ -1,16 +1,19 @@
 import numpy as np
-import urllib.request, json, time, os
+import urllib.request, json, time, os, copy
 from scipy.optimize import linprog
+
+global penguin_url
+penguin_url = 'https://penguin-stats.io/PenguinStats/api/'
 
 class MaterialPlanning(object):
     
     def __init__(self, 
                  filter_freq=20,
                  filter_stages=[],
-                 url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_details=true&show_item_details=true',
-                 url_rules='https://ak.graueneko.xyz/akmaterial.json', 
-                 path_stats='data/matrix', 
-                 path_rules='data/akmaterial.json'):
+                 url_stats='result/matrix?show_stage_details=true&show_item_details=true',
+                 url_rules='formula', 
+                 path_stats='data/matrix.json', 
+                 path_rules='data/formula.json'):
         """
         Object initialization.
         Args:
@@ -25,7 +28,7 @@ class MaterialPlanning(object):
             material_probs, convertion_rules = load_data(path_stats, path_rules)
         except:
             print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
-            material_probs, convertion_rules = request_data(url_stats, url_rules, path_stats, path_rules)
+            material_probs, convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
             print('done.')
 
         if filter_freq:
@@ -88,28 +91,43 @@ class MaterialPlanning(object):
                 cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
             except:
                 pass
+        cost_lst[self.stage_dct_rv['S4-6']] -= 3228 * 0.004
                 
         # To build equavalence relationship from convert_rule_dct.
         self.convertions_dct = {}
         convertion_matrix = []
+        convertion_outc_matrix = []
         convertion_cost_lst = []
-        convertion_lv_cost = {2:100, 3:200, 4:300, 5:400}
         for rule in convertion_rules:
-            if len(rule['madeof'])>0:
-                self.convertions_dct[rule['name']] = rule['madeof']
-                convertion = np.zeros(len(self.item_array))
-                convertion[self.item_dct_rv[rule['name']]] = 1
-                for iname in rule['madeof']:
-                    convertion[self.item_dct_rv[iname]] -= rule['madeof'][iname]
-                convertion_matrix.append(convertion)
-                convertion_cost_lst.append(convertion_lv_cost[rule['level']]*0.004)
+            convertion = np.zeros(len(self.item_array))
+            convertion[self.item_dct_rv[rule['name']]] = 1
+
+            comp_dct = {comp['name']:comp['count'] for comp in rule['costs']}
+            self.convertions_dct[rule['name']] = comp_dct
+            for iname in comp_dct:
+                convertion[self.item_dct_rv[iname]] -= comp_dct[iname]
+            convertion_matrix.append(copy.deepcopy(convertion))
+
+            outc_dct = {outc['name']:outc['count'] for outc in rule['extraOutcome']}
+            outc_wgh = {outc['name']:outc['weight'] for outc in rule['extraOutcome']}
+            weight_sum = float(sum(outc_wgh.values()))
+            for iname in outc_dct:
+                convertion[self.item_dct_rv[iname]] += outc_dct[iname]*0.175*outc_wgh[iname]/weight_sum
+            convertion_outc_matrix.append(convertion)
+            
+            convertion_cost_lst.append(rule['goldCost']*0.004)
+
         convertion_matrix = np.array(convertion_matrix)
+        convertion_outc_matrix = np.array(convertion_outc_matrix)
         convertion_cost_lst = np.array(convertion_cost_lst)
                 
-        return convertion_matrix, convertion_cost_lst, probs_matrix, cost_lst
+        return convertion_matrix, convertion_outc_matrix, convertion_cost_lst, probs_matrix, cost_lst
     
         
-    def _set_lp_parameters(self, convertion_matrix, convertion_cost_lst, probs_matrix, cost_lst):
+    def _set_lp_parameters(self, convertion_matrix, 
+                           convertion_outc_matrix, 
+                           convertion_cost_lst, 
+                           probs_matrix, cost_lst):
         """
         Object initialization.
         Args:
@@ -121,6 +139,7 @@ class MaterialPlanning(object):
             cost_lst: list. Costs per clear at each stage.
         """
         self.convertion_matrix = convertion_matrix
+        self.convertion_outc_matrix = convertion_outc_matrix
         self.convertion_cost_lst = convertion_cost_lst
         self.probs_matrix = probs_matrix
         self.cost_lst = cost_lst
@@ -131,12 +150,16 @@ class MaterialPlanning(object):
         
         self.equav_cost_lst = np.hstack([cost_lst, convertion_cost_lst])
         self.equav_matrix = np.vstack([probs_matrix, convertion_matrix])
+        self.equav_matrix_outc = np.vstack([probs_matrix, convertion_outc_matrix])
         
         
-    def update(self, filter_freq=20, filter_stages=[], url_stats='https://penguin-stats.io/PenguinStats/api/result/matrix?show_stage_details=true&show_item_details=true', 
-                 url_rules='https://ak.graueneko.xyz/akmaterial.json', 
-                 path_stats='data/matrix', 
-                 path_rules='data/akmaterial.json'):
+    def update(self, 
+               filter_freq=20,
+               filter_stages=[],
+               url_stats='result/matrix?show_stage_details=true&show_item_details=true',
+               url_rules='formula', 
+               path_stats='data/matrix.json', 
+               path_rules='data/formula.json'):
         """
         To update parameters when probabilities change or new items added.
         Args:
@@ -146,9 +169,9 @@ class MaterialPlanning(object):
             path_rules: string. local path to the composing rules data.
         """
         print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
-        material_probs, convertion_rules = request_data(url_stats, url_rules, path_stats, path_rules)
+        material_probs, convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
         print('done.')
-        
+
         if filter_freq:
             filtered_probs = []
             for dct in material_probs['matrix']:
@@ -159,7 +182,7 @@ class MaterialPlanning(object):
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
 
 
-    def _get_plan_no_prioties(self, demand_lst):
+    def _get_plan_no_prioties(self, demand_lst, outcome=False):
         """
         To solve linear programming problem without prioties.
         Args:
@@ -169,24 +192,32 @@ class MaterialPlanning(object):
             fun: estimated total cost.
         """
         status_dct = {0: 'Optimization terminated successfully, ',
-                                    1: 'Iteration limit reached, ',
-                                    2: 'Problem appears to be infeasible, ',
-                                    3: 'Problem appears to be unbounded, '}
+                      1: 'Iteration limit reached, ',
+                      2: 'Problem appears to be infeasible, ',
+                      3: 'Problem appears to be unbounded, '}
         
+        A_ub = self.equav_matrix_outc if outcome else self.equav_matrix
+
         solution = linprog(c=np.array(self.equav_cost_lst),
-                                          A_ub=-self.equav_matrix.T,
+                                          A_ub=-A_ub.T,
                                           b_ub=-np.array(demand_lst),
                                           method='interior-point')
+
+        dual_solution = linprog(c=-np.array(demand_lst),
+                                          A_ub=A_ub,
+                                          b_ub=np.array(self.equav_cost_lst),
+                                          method='interior-point')
+
         x, fun, status = solution.x, solution.fun, solution.status
         
         n_looting = x[:len(self.cost_lst)]
         n_convertion = x[len(self.cost_lst):]
         strategy = (n_looting, n_convertion)
         
-        return strategy, fun, status_dct[status]
+        return strategy, fun, status_dct[status], dual_solution.x
 
 
-    def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None):
+    def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None, outcome=False):
         """
         User API. Computing the material plan given requirements and owned items.
         Args:
@@ -200,7 +231,7 @@ class MaterialPlanning(object):
             demand_lst[self.item_dct_rv[k]] -= v
         
         stt = time.time()
-        (n_looting, n_convertion), cost, status = self._get_plan_no_prioties(demand_lst)
+        (n_looting, n_convertion), cost, status, dual_solution = self._get_plan_no_prioties(demand_lst, outcome)
 
         if print_output:
             print(status+('Computed in %.4f seconds,' %(time.time()-stt)))
@@ -260,6 +291,9 @@ class MaterialPlanning(object):
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
                 print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
+            print('Items Values:')
+            for i,item in enumerate(self.item_array):
+                print(item+': %.2f'%dual_solution[i])
 
         return res
 
