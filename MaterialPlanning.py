@@ -27,7 +27,7 @@ class MaterialPlanning(object):
         try:
             material_probs, convertion_rules = load_data(path_stats, path_rules)
         except:
-            print('Requesting data from web resources (i.e., penguin-stats.io and ak.graueneko.xyz)...', end=' ')
+            print('Requesting data from web resources (i.e., penguin-stats.io)...', end=' ')
             material_probs, convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
             print('done.')
 
