@@ -284,19 +284,26 @@ class MaterialPlanning(object):
                 }
                 syntheses.append(synthesis)
 
-        values = []
+        values = [{"level":'1', "values":[]},
+                  {"level":'2', "values":[]},
+                  {"level":'3', "values":[]},
+                  {"level":'4', "values":[]},
+                  {"level":'5', "values":[]}]
         for i,item in enumerate(self.item_array):
-            if len(self.item_id_array[i])==5:
+            if len(self.item_id_array[i])==5 and dual_solution[i]>0.1:
                 item_value = {
                     "item": item,
                     "value": '%.2f'%dual_solution[i]
                 }
-                values.append(item_value)
+                values[int(self.item_id_array[i][-1])-1]['values'].append(item_value)
+        for group in values:
+            group["values"] = sorted(group["values"], key=lambda k: float(k['value']), reverse=True) 
 
         res = {
             "cost": int(cost),
             "stages": stages,
-            "syntheses": syntheses
+            "syntheses": syntheses,
+            "values": reversed(values)
         }
 
         if print_output:
@@ -307,15 +314,17 @@ class MaterialPlanning(object):
                 print('Stage ' + stage['stage'] + '(%s times) ===> '%stage['count']
                 + ', '.join(display_lst))
 
-            print('Synthesize following items:')
+            print('\nSynthesize following items:')
             for synthesis in syntheses:
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
                 print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
 
-            print('Items Values:')
-            for value in values:
-                print(value['item'] + ': ' + value['value'])
+            print('\nItems Values:')
+            for i, level_value in reversed(list(enumerate(values))):
+                display_lst = ['%s:%s'%(item['item'], item['value']) for item in level_value['values']]
+                print('Level %d items: '%(i+1))
+                print(', '.join(display_lst))
 
         return res
 

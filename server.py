@@ -28,10 +28,15 @@ async def plan(request):
         return response.json({"error": True, "reason": "Uninterpretable input"})
 
     try:
+        extra_outc = request.json["extra_outc"]
+    except:
+        extra_outc = False
+
+    try:
         if time.time() - last_updated > 60 * 60 * 12:
             mp.update()
             last_updated = time.time()
-        dct = mp.get_plan(required_dct, owned_dct, False)
+        dct = mp.get_plan(required_dct, owned_dct, False, outcome=extra_outc)
     except ValueError as e:
         return response.json({"error": True, "reason": str(e)})
 
