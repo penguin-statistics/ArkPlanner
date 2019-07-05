@@ -215,7 +215,7 @@ class MaterialPlanning(object):
             dual_factor /= 10.0
         
         
-        return solution, dual_solution.x, excp_factor
+        return solution, dual_solution, excp_factor
 
 
     def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None, outcome=False):
@@ -241,6 +241,7 @@ class MaterialPlanning(object):
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome)
         correction_factor = 1/excp_factor
         x, cost, status = solution.x*correction_factor, solution.fun*correction_factor, solution.status
+        y, slack = dual_solution.x, dual_solution.slack
         n_looting = x[:len(self.cost_lst)]
         n_convertion = x[len(self.cost_lst):]
 
@@ -290,10 +291,10 @@ class MaterialPlanning(object):
                   {"level":'4', "values":[]},
                   {"level":'5', "values":[]}]
         for i,item in enumerate(self.item_array):
-            if len(self.item_id_array[i])==5 and dual_solution[i]>0.1:
+            if len(self.item_id_array[i])==5 and y[i]>0.1:
                 item_value = {
                     "item": item,
-                    "value": '%.2f'%dual_solution[i]
+                    "value": '%.2f'%y[i]
                 }
                 values[int(self.item_id_array[i][-1])-1]['values'].append(item_value)
         for group in values:
