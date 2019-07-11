@@ -253,7 +253,7 @@ class MaterialPlanning(object):
             demand_lst[self.item_dct_rv[k]] -= v
         
         stt = time.time()
-        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome)
+        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand)
         correction_factor = 1/excp_factor
         x, cost, status = solution.x*correction_factor, solution.fun*correction_factor, solution.status
         y, slack = dual_solution.x, dual_solution.slack
