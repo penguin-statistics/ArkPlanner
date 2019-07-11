@@ -20,4 +20,4 @@ if __name__ == '__main__':
         for line in f.readlines():
             owned_dct [line.split(' ')[0]] = int(line.split(' ')[1])
     
-    mp.get_plan(required_dct, owned_dct, outcome=False)
+    mp.get_plan(required_dct, owned_dct, True, outcome=True)

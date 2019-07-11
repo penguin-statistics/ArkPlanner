@@ -52,6 +52,10 @@ class MaterialPlanning(object):
         """
         # To count items and stages.
         additional_items = {'30135': u'D32钢', '30125': u'双极纳米片', '30115': u'聚合剂'}
+        exp_unit = 200*30.0/7400
+        gold_unit = 0.004
+        exp_worths = {'2001':exp_unit, '2002':exp_unit*2, '2003':exp_unit*5, '2004':exp_unit*10}
+        gold_worths = {'3003':gold_unit*500}
 
         item_dct = {}
         stage_dct = {}
@@ -84,15 +88,30 @@ class MaterialPlanning(object):
         # To format dropping records into sparse probability matrix
         probs_matrix = np.zeros([len(stage_array), len(item_array)])
         cost_lst = np.zeros(len(stage_array))
+        cost_exp_offset = np.zeros(len(stage_array))
+        cost_gold_offset = np.zeros(len(stage_array))
         for dct in material_probs['matrix']:
             try:
                 float(dct['item']['itemId'])
                 probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
-                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
+                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']*(1-12*gold_unit)
             except:
                 pass
-        cost_lst[self.stage_dct_rv['S4-6']] -= 3228 * 0.004
-                
+
+            try:
+                cost_exp_offset[self.stage_dct_rv[dct['stage']['code']]] -= exp_worths[dct['item']['itemId']]
+            except:
+                pass
+
+            try:
+                cost_exp_offset[self.stage_dct_rv[dct['stage']['code']]] -= gold_worths[dct['item']['itemId']]
+            except:
+                pass
+
+        # Hardcoding: extra gold farmed.
+        cost_gold_offset[self.stage_dct_rv['S4-6']] -= 3228 * gold_unit
+        cost_gold_offset[self.stage_dct_rv['S5-2']] -= (2700-216) * gold_unit
+
         # To build equavalence relationship from convert_rule_dct.
         self.convertions_dct = {}
         convertion_matrix = []
@@ -117,17 +136,13 @@ class MaterialPlanning(object):
             
             convertion_cost_lst.append(rule['goldCost']*0.004)
 
-        convertion_matrix = np.array(convertion_matrix)
-        convertion_outc_matrix = np.array(convertion_outc_matrix)
-        convertion_cost_lst = np.array(convertion_cost_lst)
+        convertions_group = (np.array(convertion_matrix), np.array(convertion_outc_matrix), np.array(convertion_cost_lst))
+        farms_group = (probs_matrix, cost_lst, cost_exp_offset, cost_gold_offset)
                 
-        return convertion_matrix, convertion_outc_matrix, convertion_cost_lst, probs_matrix, cost_lst
+        return convertions_group, farms_group
     
         
-    def _set_lp_parameters(self, convertion_matrix, 
-                           convertion_outc_matrix, 
-                           convertion_cost_lst, 
-                           probs_matrix, cost_lst):
+    def _set_lp_parameters(self, convertions_group, farms_group):
         """
         Object initialization.
         Args:
@@ -138,19 +153,13 @@ class MaterialPlanning(object):
                 Items per clear (probabilities) at each stage.
             cost_lst: list. Costs per clear at each stage.
         """
-        self.convertion_matrix = convertion_matrix
-        self.convertion_outc_matrix = convertion_outc_matrix
-        self.convertion_cost_lst = convertion_cost_lst
-        self.probs_matrix = probs_matrix
-        self.cost_lst = cost_lst
+        self.convertion_matrix, self.convertion_outc_matrix, self.convertion_cost_lst = convertions_group
+        self.probs_matrix, self.cost_lst, self.cost_exp_offset, self.cost_gold_offset = farms_group
         
         assert len(self.probs_matrix)==len(self.cost_lst)
         assert len(self.convertion_matrix)==len(self.convertion_cost_lst)
         assert self.probs_matrix.shape[1]==self.convertion_matrix.shape[1]
         
-        self.equav_cost_lst = np.hstack([cost_lst, convertion_cost_lst])
-        self.equav_matrix = np.vstack([probs_matrix, convertion_matrix])
-        self.equav_matrix_outc = np.vstack([probs_matrix, convertion_outc_matrix])
         
     def update(self, 
                filter_freq=20,
@@ -181,7 +190,7 @@ class MaterialPlanning(object):
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
 
 
-    def _get_plan_no_prioties(self, demand_lst, outcome=False):
+    def _get_plan_no_prioties(self, demand_lst, outcome=False, gold_demand=True, exp_demand=True):
         """
         To solve linear programming problem without prioties.
         Args:
@@ -190,13 +199,18 @@ class MaterialPlanning(object):
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
         """    
-        A_ub = self.equav_matrix_outc if outcome else self.equav_matrix
+        A_ub = (np.vstack([self.probs_matrix, self.convertion_outc_matrix]) 
+                if outcome else np.vstack([self.probs_matrix, self.convertion_matrix])).T
+        farm_cost = (self.cost_lst + 
+                     (self.cost_exp_offset if exp_demand else 0) + 
+                     (self.cost_gold_offset if gold_demand else 0))
+        cost = (np.hstack([farm_cost, self.convertion_cost_lst]))
         excp_factor = 1.0
         dual_factor = 1.0
 
         while excp_factor>1e-5:
-            solution = linprog(c=np.array(self.equav_cost_lst),
-                               A_ub=-A_ub.T,
+            solution = linprog(c=cost,
+                               A_ub=-A_ub,
                                b_ub=-np.array(demand_lst)*excp_factor,
                                method='interior-point')
             if solution.status != 4:
@@ -206,8 +220,8 @@ class MaterialPlanning(object):
 
         while dual_factor>1e-5:
             dual_solution = linprog(c=-np.array(demand_lst)*excp_factor*dual_factor,
-                                    A_ub=A_ub,
-                                    b_ub=np.array(self.equav_cost_lst),
+                                    A_ub=A_ub.T,
+                                    b_ub=cost,
                                     method='interior-point')
             if solution.status != 4:
                 break
@@ -218,7 +232,8 @@ class MaterialPlanning(object):
         return solution, dual_solution, excp_factor
 
 
-    def get_plan(self, requirement_dct, deposited_dct={}, print_output=True, prioty_dct=None, outcome=False):
+    def get_plan(self, requirement_dct, deposited_dct={}, 
+                 print_output=True, outcome=False, gold_demand=True, exp_demand=True):
         """
         User API. Computing the material plan given requirements and owned items.
         Args:
@@ -275,7 +290,7 @@ class MaterialPlanning(object):
                     "materials": materials
                 }
                 syntheses.append(synthesis)
-            elif t >= 0.01:
+            elif t >= 0.05:
                 target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
                 materials = { k: '%.1f'%(v*t) for k,v in self.convertions_dct[target_item].items() }
                 synthesis = {

@@ -33,10 +33,21 @@ async def plan(request):
         extra_outc = False
 
     try:
+        exp_demand = request.json["exp_demand"]
+    except:
+        exp_demand = True
+
+    try:
+        gold_demand = request.json["gold_demand"]
+    except:
+        gold_demand = True
+
+    try:
         if time.time() - last_updated > 60 * 60 * 12:
             mp.update()
             last_updated = time.time()
-        dct = mp.get_plan(required_dct, owned_dct, False, outcome=extra_outc)
+        dct = mp.get_plan(required_dct, owned_dct, False, 
+                          outcome=extra_outc, exp_demand=exp_demand, gold_demand=gold_demand)
     except ValueError as e:
         return response.json({"error": True, "reason": str(e)})
 
