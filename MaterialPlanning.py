@@ -319,7 +319,7 @@ class MaterialPlanning(object):
             "cost": int(cost),
             "stages": stages,
             "syntheses": syntheses,
-            "values": reversed(values)
+            "values": list(reversed(values))
         }
 
         if print_output:
