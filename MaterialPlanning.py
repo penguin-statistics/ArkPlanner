@@ -94,7 +94,9 @@ class MaterialPlanning(object):
             try:
                 float(dct['item']['itemId'])
                 probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
-                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']*(1-12*gold_unit)
+                if cost_lst[self.stage_dct_rv[dct['stage']['code']]] == 0:
+                    cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
+                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
             except:
                 pass
 
@@ -104,13 +106,13 @@ class MaterialPlanning(object):
                 pass
 
             try:
-                cost_exp_offset[self.stage_dct_rv[dct['stage']['code']]] -= gold_worths[dct['item']['itemId']]
+                cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] -= gold_worths[dct['item']['itemId']]
             except:
                 pass
 
         # Hardcoding: extra gold farmed.
         cost_gold_offset[self.stage_dct_rv['S4-6']] -= 3228 * gold_unit
-        cost_gold_offset[self.stage_dct_rv['S5-2']] -= (2700-216) * gold_unit
+        cost_gold_offset[self.stage_dct_rv['S5-2']] -= 2484 * gold_unit
 
         # To build equavalence relationship from convert_rule_dct.
         self.convertions_dct = {}
@@ -205,6 +207,8 @@ class MaterialPlanning(object):
                      (self.cost_exp_offset if exp_demand else 0) + 
                      (self.cost_gold_offset if gold_demand else 0))
         cost = (np.hstack([farm_cost, self.convertion_cost_lst]))
+        assert np.any(farm_cost>=0)
+        
         excp_factor = 1.0
         dual_factor = 1.0
 
