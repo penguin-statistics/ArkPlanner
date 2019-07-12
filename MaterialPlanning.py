@@ -255,7 +255,8 @@ class MaterialPlanning(object):
         stt = time.time()
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand)
         correction_factor = 1/excp_factor
-        x, cost, status = solution.x*correction_factor, solution.fun*correction_factor, solution.status
+        x, status = solution.x*correction_factor, solution.status
+        cost = np.dot(x, np.hstack([self.cost_lst, self.convertion_cost_lst]))
         y, slack = dual_solution.x, dual_solution.slack
         n_looting = x[:len(self.cost_lst)]
         n_convertion = x[len(self.cost_lst):]
