@@ -258,12 +258,13 @@ class MaterialPlanning(object):
         
         stt = time.time()
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand)
-        correction_factor = 1/excp_factor
-        x, status = solution.x*correction_factor, solution.status
-        cost = np.dot(x, np.hstack([self.cost_lst, self.convertion_cost_lst]))
+        x, status = solution.x/excp_factor, solution.status
         y, slack = dual_solution.x, dual_solution.slack
-        n_looting = x[:len(self.cost_lst)]
-        n_convertion = x[len(self.cost_lst):]
+        n_looting, n_convertion = x[:len(self.cost_lst)], x[len(self.cost_lst):]
+
+        cost = np.dot(x, np.hstack([self.cost_lst, self.convertion_cost_lst]))
+        gold = - np.dot(n_looting, self.cost_gold_offset) / 0.004
+        exp = - np.dot(n_looting, self.cost_exp_offset) * 7400 / 30.0
 
         if print_output:
             print(status_dct[status]+(' Computed in %.4f seconds,' %(time.time()-stt)))
@@ -322,6 +323,8 @@ class MaterialPlanning(object):
 
         res = {
             "cost": int(cost),
+            "gold": int(gold),
+            "exp": int(exp),
             "stages": stages,
             "syntheses": syntheses,
             "values": list(reversed(values))
