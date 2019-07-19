@@ -101,12 +101,12 @@ class MaterialPlanning(object):
                 pass
 
             try:
-                cost_exp_offset[self.stage_dct_rv[dct['stage']['code']]] -= exp_worths[dct['item']['itemId']]
+                cost_exp_offset[self.stage_dct_rv[dct['stage']['code']]] -= exp_worths[dct['item']['itemId']]*dct['quantity']/float(dct['times'])
             except:
                 pass
 
             try:
-                cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] -= gold_worths[dct['item']['itemId']]
+                cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] -= gold_worths[dct['item']['itemId']]*dct['quantity']/float(dct['times'])
             except:
                 pass
 
@@ -262,9 +262,13 @@ class MaterialPlanning(object):
         y, slack = dual_solution.x, dual_solution.slack
         n_looting, n_convertion = x[:len(self.cost_lst)], x[len(self.cost_lst):]
 
-        cost = np.dot(x, np.hstack([self.cost_lst, self.convertion_cost_lst]))
+        cost = np.dot(x[:len(self.cost_lst)], self.cost_lst)
+        gcost = np.dot(x[len(self.cost_lst):], self.convertion_cost_lst) / 0.004
         gold = - np.dot(n_looting, self.cost_gold_offset) / 0.004
         exp = - np.dot(n_looting, self.cost_exp_offset) * 7400 / 30.0
+
+        print(n_looting[self.stage_dct_rv['S4-6']])
+        print(self.cost_exp_offset[self.stage_dct_rv['S4-6']])
 
         if print_output:
             print(status_dct[status]+(' Computed in %.4f seconds,' %(time.time()-stt)))
@@ -275,7 +279,7 @@ class MaterialPlanning(object):
         stages = []
         for i,t in enumerate(n_looting):
             if t >= 0.1:
-                target_items = np.where(self.probs_matrix[i]>=0.05)[0]
+                target_items = np.where(self.probs_matrix[i]>=0.02)[0]
                 items = {self.item_array[idx]: float2str(self.probs_matrix[i, idx]*t)
                 for idx in target_items if len(self.item_id_array[idx])==5}
                 stage = {
@@ -306,23 +310,24 @@ class MaterialPlanning(object):
                 }
                 syntheses.append(synthesis)
 
-        values = [{"level":'1', "values":[]},
-                  {"level":'2', "values":[]},
-                  {"level":'3', "values":[]},
-                  {"level":'4', "values":[]},
-                  {"level":'5', "values":[]}]
+        values = [{"level":'1', "items":[]},
+                  {"level":'2', "items":[]},
+                  {"level":'3', "items":[]},
+                  {"level":'4', "items":[]},
+                  {"level":'5', "items":[]}]
         for i,item in enumerate(self.item_array):
             if len(self.item_id_array[i])==5 and y[i]>0.1:
                 item_value = {
-                    "item": item,
+                    "name": item,
                     "value": '%.2f'%y[i]
                 }
-                values[int(self.item_id_array[i][-1])-1]['values'].append(item_value)
+                values[int(self.item_id_array[i][-1])-1]['items'].append(item_value)
         for group in values:
-            group["values"] = sorted(group["values"], key=lambda k: float(k['value']), reverse=True) 
+            group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True) 
 
         res = {
             "cost": int(cost),
+            "gcost": int(gcost),
             "gold": int(gold),
             "exp": int(exp),
             "stages": stages,
@@ -331,7 +336,7 @@ class MaterialPlanning(object):
         }
 
         if print_output:
-            print('Estimated total cost', res['cost'])
+            print('Estimated total cost: %d, gold: %d, exp: %d.'%(res['cost'],res['gold'],res['exp']))
             print('Loot at following stages:')
             for stage in stages:
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
@@ -345,8 +350,8 @@ class MaterialPlanning(object):
                 + ', '.join(display_lst))
 
             print('\nItems Values:')
-            for i, level_value in reversed(list(enumerate(values))):
-                display_lst = ['%s:%s'%(item['item'], item['value']) for item in level_value['values']]
+            for i, group in reversed(list(enumerate(values))):
+                display_lst = ['%s:%s'%(item['name'], item['value']) for item in group['items']]
                 print('Level %d items: '%(i+1))
                 print(', '.join(display_lst))
 
