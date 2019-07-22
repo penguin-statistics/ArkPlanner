@@ -1,7 +1,6 @@
 from sanic import Sanic, response
 from MaterialPlanning import MaterialPlanning
-import time
-
+import time, codecs
 
 app = Sanic()
 
@@ -10,7 +9,6 @@ app.static('/css', './ArkPlannerWeb/css')
 app.static('/fonts', './ArkPlannerWeb/fonts')
 app.static('/img', './ArkPlannerWeb/img')
 app.static('/js', './ArkPlannerWeb/js')
-
 
 
 mp = MaterialPlanning()
@@ -43,7 +41,7 @@ async def plan(request):
         gold_demand = True
 
     try:
-        if time.time() - last_updated > 60 * 60 * 12:
+        if time.time() - last_updated > 60 * 30:
             mp.update()
             last_updated = time.time()
         dct = mp.get_plan(required_dct, owned_dct, False, 
@@ -52,6 +50,13 @@ async def plan(request):
         return response.json({"error": True, "reason": str(e)})
 
     return response.json(dct)
+
+# def get_costume_counts(countdir='costume_counts.txt'):
+#     global costume_counts
+#     try:
+#         with codecs.open(countdir, 'r', 'utf-8') as f:
+#             costume_counts = f.readline()
+
 
 
 if __name__ == "__main__":
