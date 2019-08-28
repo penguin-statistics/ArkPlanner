@@ -1,8 +1,6 @@
 # ArkPlanner
 
-[Web Demo](https://planner.penguin-stats.io/) at Penguin-Stat is available now.
-
-[Web Demo 2](https://ak.inva.land/) implemented by [@invisiblearts](https://github.com/invisiblearts).
+[Web Demo](https://planner.penguin-stats.io/) at Penguin-Stat is available now. Or try [Web Demo 2](https://ak.inva.land/) implemented by [@invisiblearts](https://github.com/invisiblearts).
 
 明日方舟最优刷图策略规划工具，基于开源的掉落统计数据、素材合成规则以及（原理很简单的）线性规划算法。由于混合掉落、额外掉落副本的存在且各种材料掉落概率不同，在材料需求较复杂时，要刷哪些副本并不直观，大多情况下需要通过比较复杂的计算得到最优解。同时，了解刷所需材料预计消耗多少体力也会帮助你更好的规划体力。原理：将素材合成也看作一种掉落在约束中加以考虑（目标材料掉落1，消耗的材料掉落为-1），其cost为0或合成所需代币的等价体力消耗。
 
