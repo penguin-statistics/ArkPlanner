@@ -2,8 +2,9 @@ import numpy as np
 import urllib.request, json, time, os, copy, sys
 from scipy.optimize import linprog
 
-global penguin_url
+global penguin_url, headers
 penguin_url = 'https://penguin-stats.io/PenguinStats/api/'
+headers = {'User-Agent':'ArkPlanner'}
 
 class MaterialPlanning(object):
     
@@ -92,11 +93,11 @@ class MaterialPlanning(object):
         cost_gold_offset = np.zeros(len(stage_array))
         for dct in material_probs['matrix']:
             try:
+                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
                 float(dct['item']['itemId'])
                 probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
                 if cost_lst[self.stage_dct_rv[dct['stage']['code']]] == 0:
                     cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
-                cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
             except:
                 pass
 
@@ -206,7 +207,8 @@ class MaterialPlanning(object):
         farm_cost = (self.cost_lst + 
                      (self.cost_exp_offset if exp_demand else 0) + 
                      (self.cost_gold_offset if gold_demand else 0))
-        cost = (np.hstack([farm_cost, self.convertion_cost_lst]))
+        convertion_cost_lst = self.convertion_cost_lst if gold_demand else np.zeros(self.convertion_cost_lst.shape)
+        cost = (np.hstack([farm_cost, convertion_cost_lst]))
         assert np.any(farm_cost>=0)
         
         excp_factor = 1.0
@@ -266,9 +268,6 @@ class MaterialPlanning(object):
         gcost = np.dot(x[len(self.cost_lst):], self.convertion_cost_lst) / 0.004
         gold = - np.dot(n_looting, self.cost_gold_offset) / 0.004
         exp = - np.dot(n_looting, self.cost_exp_offset) * 7400 / 30.0
-
-        print(n_looting[self.stage_dct_rv['S4-6']])
-        print(self.cost_exp_offset[self.stage_dct_rv['S4-6']])
 
         if print_output:
             print(status_dct[status]+(' Computed in %.4f seconds,' %(time.time()-stt)))
@@ -394,13 +393,16 @@ def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
     except:
         pass
     
-    with urllib.request.urlopen(url_stats) as url:
-        material_probs = json.loads(url.read().decode())
+    req = urllib.request.Request(url_stats, None, headers)
+    with urllib.request.urlopen(req) as response:
+        material_probs = json.loads(response.read().decode())
         with open(save_path_stats, 'w') as outfile:
             json.dump(material_probs, outfile)
 
-    with urllib.request.urlopen(url_rules) as url:
-        convertion_rules = json.loads(url.read().decode())
+    req = urllib.request.Request(url_rules, None, headers)
+    with urllib.request.urlopen(req) as response:
+        response = urllib.request.urlopen(req)
+        convertion_rules = json.loads(response.read().decode())
         with open(save_path_rules, 'w') as outfile:
             json.dump(convertion_rules, outfile)
 
