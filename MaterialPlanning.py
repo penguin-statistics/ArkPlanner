@@ -9,7 +9,7 @@ headers = {'User-Agent':'ArkPlanner'}
 class MaterialPlanning(object):
     
     def __init__(self, 
-                 filter_freq=20,
+                 filter_freq=200,
                  filter_stages=[],
                  url_stats='result/matrix?show_stage_details=true&show_item_details=true',
                  url_rules='formula', 
