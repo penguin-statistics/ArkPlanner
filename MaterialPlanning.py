@@ -32,12 +32,12 @@ class MaterialPlanning(object):
             material_probs, convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
             print('done.')
 
-        if filter_freq:
-            filtered_probs = []
-            for dct in material_probs['matrix']:
-                if dct['times']>=filter_freq and dct['stage']['code'] not in filter_stages:
+        filtered_probs = []
+        for dct in material_probs['matrix']:
+            if dct['stage']['apCost']>0.1 and dct['stage']['code'] not in filter_stages:
+                if not filter_freq or dct['times']>=filter_freq:
                     filtered_probs.append(dct)
-            material_probs['matrix'] = filtered_probs
+        material_probs['matrix'] = filtered_probs
 
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
             
