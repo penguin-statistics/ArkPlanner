@@ -96,8 +96,7 @@ class MaterialPlanning(object):
                 cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
                 float(dct['item']['itemId'])
                 probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
-                if cost_lst[self.stage_dct_rv[dct['stage']['code']]] == 0:
-                    cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
+                cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
             except:
                 pass
 
