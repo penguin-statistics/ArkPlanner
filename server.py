@@ -41,7 +41,7 @@ async def plan(request):
         gold_demand = True
 
     try:
-        filter_stages = request.json["filter"]
+        filter_stages = request.json["filter_stages"]
     except:
         filter_stages = []
 
