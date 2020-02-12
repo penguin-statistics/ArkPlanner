@@ -4,7 +4,7 @@ from MaterialPlanning import *
 
 if __name__ == '__main__':
     if '-fe' in sys.argv:
-        filter_stages = [f'GT-{i}' for i in range(1,7)]
+        filter_stages = ['GT-{}'.format(i) for i in range(1,7)]
     else:
         filter_stages = []
     mp = MaterialPlanning(filter_stages=filter_stages)
