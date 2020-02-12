@@ -1,6 +1,7 @@
 import time
 import asyncio
 
+import click
 from sanic import Sanic, response
 from MaterialPlanning import MaterialPlanning
 
@@ -54,5 +55,15 @@ async def update_each_half_hour(app, loop):
         await asyncio.sleep(30 * 60)
 
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000, debug=True)
+@click.command()
+@click.option('-h', '--host', default='127.0.0.1', help='Binding address')
+@click.option('-p', '--port', default=8000, help='Binding port')
+@click.option('-w', '--workers', default=1, help='Number of worker')
+@click.option('--debug', is_flag=True, default=False, help='Trigger Sanic debug mode')
+@click.option('--log', is_flag=True, default=False, help='Trigger Sanic request log(will slows server)')
+def start_server(host, port, workers, debug, log):
+    app.run(host=host, port=port, workers=workers, debug=debug, access_log=log)
+
+
+if __name__ == '__main__':
+    start_server()
