@@ -262,6 +262,13 @@ class MaterialPlanning(object):
         is_stage_alive = [False if stage in exclude else True for stage in self.stage_array]
 
         if exclude:
+            BackTrace = [
+                copy.copy(self.stage_array),
+                copy.copy(self.cost_lst),
+                copy.copy(self.probs_matrix),
+                copy.copy(self.cost_exp_offset),
+                copy.copy(self.cost_gold_offset)
+                ]
             self.stage_array = self.stage_array[is_stage_alive]
             self.cost_lst = self.cost_lst[is_stage_alive]
             self.probs_matrix = self.probs_matrix[is_stage_alive]
@@ -363,6 +370,13 @@ class MaterialPlanning(object):
                 display_lst = ['%s:%s'%(item['name'], item['value']) for item in group['items']]
                 print('Level %d items: '%(i+1))
                 print(', '.join(display_lst))
+
+        if exclude:
+            self.stage_array = BackTrace[0]
+            self.cost_lst = BackTrace[1]
+            self.probs_matrix = BackTrace[2]
+            self.cost_exp_offset = BackTrace[3]
+            self.cost_gold_offset = BackTrace[4]
 
         return res
 
