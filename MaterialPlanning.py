@@ -6,8 +6,8 @@ global penguin_url, headers
 penguin_url = 'https://penguin-stats.io/PenguinStats/api/'
 headers = {'User-Agent':'ArkPlanner'}
 
-class MaterialPlanning(object):
 
+class MaterialPlanning(object):
     def __init__(self,
                  filter_freq=200,
                  filter_stages=[],

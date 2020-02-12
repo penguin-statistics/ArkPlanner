@@ -1,13 +1,12 @@
 import sys, codecs
 from MaterialPlanning import *
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     if '-fe' in sys.argv:
-        filter_stages = ['GT-'+str(i) for i in range(1,7)]
+        filter_stages = [f'GT-{i}' for i in range(1,7)]
     else:
         filter_stages = []
-    
     mp = MaterialPlanning(filter_stages=filter_stages)
     
     with codecs.open('required.txt', 'r', 'utf-8') as f:
