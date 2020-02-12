@@ -7,13 +7,13 @@ penguin_url = 'https://penguin-stats.io/PenguinStats/api/'
 headers = {'User-Agent':'ArkPlanner'}
 
 class MaterialPlanning(object):
-    
-    def __init__(self, 
+
+    def __init__(self,
                  filter_freq=200,
                  filter_stages=[],
                  url_stats='result/matrix?show_stage_details=true&show_item_details=true',
-                 url_rules='formula', 
-                 path_stats='data/matrix.json', 
+                 url_rules='formula',
+                 path_stats='data/matrix.json',
                  path_rules='data/formula.json'):
         """
         Object initialization.
@@ -40,8 +40,8 @@ class MaterialPlanning(object):
         material_probs['matrix'] = filtered_probs
 
         self._set_lp_parameters(*self._pre_processing(material_probs, convertion_rules))
-            
-                
+
+
     def _pre_processing(self, material_probs, convertion_rules):
         """
         Compute costs, convertion rules and items probabilities from requested dictionaries.
@@ -53,10 +53,10 @@ class MaterialPlanning(object):
         """
         # To count items and stages.
         additional_items = {'30135': u'D32钢', '30125': u'双极纳米片', '30115': u'聚合剂'}
-        exp_unit = 200*30.0/7400
+        exp_unit = 200*(30.0-0.048*30)/7400
         gold_unit = 0.004
-        exp_worths = {'2001':exp_unit, '2002':exp_unit*2, '2003':exp_unit*5, '2004':exp_unit*10}
-        gold_worths = {'3003':gold_unit*500}
+        exp_worths = {'2001':exp_unit, '2002':exp_unit*2, '2003':exp_unit*5, '2004':exp_unit*10, '3003':exp_unit*2}
+        gold_worths = {}
 
         item_dct = {}
         stage_dct = {}
@@ -64,7 +64,7 @@ class MaterialPlanning(object):
             item_dct[dct['item']['itemId']]=dct['item']['name']
             stage_dct[dct['stage']['code']]=dct['stage']['code']
         item_dct.update(additional_items)
-        
+
         # To construct mapping from id to item names.
         item_array = []
         item_id_array = []
@@ -85,7 +85,7 @@ class MaterialPlanning(object):
             stage_array.append(v)
         self.stage_array = np.array(stage_array)
         self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
-        
+
         # To format dropping records into sparse probability matrix
         probs_matrix = np.zeros([len(stage_array), len(item_array)])
         cost_lst = np.zeros(len(stage_array))
@@ -96,7 +96,8 @@ class MaterialPlanning(object):
                 cost_lst[self.stage_dct_rv[dct['stage']['code']]] = dct['stage']['apCost']
                 float(dct['item']['itemId'])
                 probs_matrix[self.stage_dct_rv[dct['stage']['code']], self.item_dct_rv[dct['item']['name']]] = dct['quantity']/float(dct['times'])
-                cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
+                if cost_lst[self.stage_dct_rv[dct['stage']['code']]] != 0:
+                    cost_gold_offset[self.stage_dct_rv[dct['stage']['code']]] = - dct['stage']['apCost']*(12*gold_unit)
             except:
                 pass
 
@@ -135,40 +136,40 @@ class MaterialPlanning(object):
             for iname in outc_dct:
                 convertion[self.item_dct_rv[iname]] += outc_dct[iname]*0.175*outc_wgh[iname]/weight_sum
             convertion_outc_matrix.append(convertion)
-            
+
             convertion_cost_lst.append(rule['goldCost']*0.004)
 
         convertions_group = (np.array(convertion_matrix), np.array(convertion_outc_matrix), np.array(convertion_cost_lst))
         farms_group = (probs_matrix, cost_lst, cost_exp_offset, cost_gold_offset)
-                
+
         return convertions_group, farms_group
-    
-        
+
+
     def _set_lp_parameters(self, convertions_group, farms_group):
         """
         Object initialization.
         Args:
-            convertion_matrix: matrix of shape [n_rules, n_items]. 
+            convertion_matrix: matrix of shape [n_rules, n_items].
                 Each row represent a rule.
             convertion_cost_lst: list. Cost in equal value to the currency spent in convertion.
-            probs_matrix: sparse matrix of shape [n_stages, n_items]. 
+            probs_matrix: sparse matrix of shape [n_stages, n_items].
                 Items per clear (probabilities) at each stage.
             cost_lst: list. Costs per clear at each stage.
         """
         self.convertion_matrix, self.convertion_outc_matrix, self.convertion_cost_lst = convertions_group
         self.probs_matrix, self.cost_lst, self.cost_exp_offset, self.cost_gold_offset = farms_group
-        
+
         assert len(self.probs_matrix)==len(self.cost_lst)
         assert len(self.convertion_matrix)==len(self.convertion_cost_lst)
         assert self.probs_matrix.shape[1]==self.convertion_matrix.shape[1]
-        
-        
-    def update(self, 
+
+
+    def update(self,
                filter_freq=20,
                filter_stages=[],
                url_stats='result/matrix?show_stage_details=true&show_item_details=true',
-               url_rules='formula', 
-               path_stats='data/matrix.json', 
+               url_rules='formula',
+               path_stats='data/matrix.json',
                path_rules='data/formula.json'):
         """
         To update parameters when probabilities change or new items added.
@@ -200,16 +201,17 @@ class MaterialPlanning(object):
         Returns:
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
-        """    
-        A_ub = (np.vstack([self.probs_matrix, self.convertion_outc_matrix]) 
+        """
+        A_ub = (np.vstack([self.probs_matrix, self.convertion_outc_matrix])
                 if outcome else np.vstack([self.probs_matrix, self.convertion_matrix])).T
-        farm_cost = (self.cost_lst + 
-                     (self.cost_exp_offset if exp_demand else 0) + 
+        farm_cost = (self.cost_lst +
+                     (self.cost_exp_offset if exp_demand else 0) +
                      (self.cost_gold_offset if gold_demand else 0))
+#        print(farm_cost)
         convertion_cost_lst = self.convertion_cost_lst if gold_demand else np.zeros(self.convertion_cost_lst.shape)
         cost = (np.hstack([farm_cost, convertion_cost_lst]))
         assert np.any(farm_cost>=0)
-        
+
         excp_factor = 1.0
         dual_factor = 1.0
 
@@ -220,7 +222,7 @@ class MaterialPlanning(object):
                                method='interior-point')
             if solution.status != 4:
                 break
-            
+
             excp_factor /= 10.0
 
         while dual_factor>1e-5:
@@ -232,13 +234,13 @@ class MaterialPlanning(object):
                 break
 
             dual_factor /= 10.0
-        
-        
+
+
         return solution, dual_solution, excp_factor
 
 
-    def get_plan(self, requirement_dct, deposited_dct={}, 
-                 print_output=True, outcome=False, gold_demand=True, exp_demand=True):
+    def get_plan(self, requirement_dct, deposited_dct={},
+                 print_output=True, outcome=False, gold_demand=True, exp_demand=True, exclude=[]):
         """
         User API. Computing the material plan given requirements and owned items.
         Args:
@@ -256,7 +258,23 @@ class MaterialPlanning(object):
             demand_lst[self.item_dct_rv[k]] = v
         for k, v in deposited_dct.items():
             demand_lst[self.item_dct_rv[k]] -= v
-        
+
+        is_stage_alive = [False if stage in exclude else True for stage in self.stage_array]
+
+        if exclude:
+            BackTrace = [
+                copy.copy(self.stage_array),
+                copy.copy(self.cost_lst),
+                copy.copy(self.probs_matrix),
+                copy.copy(self.cost_exp_offset),
+                copy.copy(self.cost_gold_offset)
+                ]
+            self.stage_array = self.stage_array[is_stage_alive]
+            self.cost_lst = self.cost_lst[is_stage_alive]
+            self.probs_matrix = self.probs_matrix[is_stage_alive]
+            self.cost_exp_offset = self.cost_exp_offset[is_stage_alive]
+            self.cost_gold_offset = self.cost_gold_offset[is_stage_alive]
+
         stt = time.time()
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand)
         x, status = solution.x/excp_factor, solution.status
@@ -321,7 +339,7 @@ class MaterialPlanning(object):
                 }
                 values[int(self.item_id_array[i][-1])-1]['items'].append(item_value)
         for group in values:
-            group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True) 
+            group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True)
 
         res = {
             "cost": int(cost),
@@ -352,6 +370,13 @@ class MaterialPlanning(object):
                 display_lst = ['%s:%s'%(item['name'], item['value']) for item in group['items']]
                 print('Level %d items: '%(i+1))
                 print(', '.join(display_lst))
+
+        if exclude:
+            self.stage_array = BackTrace[0]
+            self.cost_lst = BackTrace[1]
+            self.probs_matrix = BackTrace[2]
+            self.cost_exp_offset = BackTrace[3]
+            self.cost_gold_offset = BackTrace[4]
 
         return res
 
@@ -391,7 +416,7 @@ def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
         os.mkdir(os.path.dirname(save_path_rules))
     except:
         pass
-    
+
     req = urllib.request.Request(url_stats, None, headers)
     with urllib.request.urlopen(req) as response:
         material_probs = json.loads(response.read().decode())
@@ -417,9 +442,9 @@ def load_data(path_stats, path_rules):
         material_probs: dictionary. Content of the stats json file.
         convertion_rules: dictionary. Content of the rules json file.
     """
-    with open(path_stats) as json_file:  
+    with open(path_stats) as json_file:
         material_probs  = json.load(json_file)
-    with open(path_rules) as json_file:  
+    with open(path_rules) as json_file:
         convertion_rules  = json.load(json_file)
 
     return material_probs, convertion_rules
