@@ -46,9 +46,8 @@ async def plan(request):
         filter_stages = []
 
     try:
-        if time.time() - last_updated > 60 * 30:
-            mp.update(filter_stages=filter_stages)
-            last_updated = time.time()
+        mp.update(filter_stages=filter_stages)
+        last_updated = time.time()
         dct = mp.get_plan(required_dct, owned_dct, False, 
                           outcome=extra_outc, exp_demand=exp_demand, gold_demand=gold_demand)
     except ValueError as e:
