@@ -8,15 +8,15 @@ if __name__ == '__main__':
     else:
         filter_stages = []
     mp = MaterialPlanning(filter_stages=filter_stages)
-    
+
     with codecs.open('required.txt', 'r', 'utf-8') as f:
         required_dct = {}
         for line in f.readlines():
             required_dct[line.split(' ')[0]] = int(line.split(' ')[1])
-            
+
     with codecs.open('owned.txt', 'r', 'utf-8') as f:
         owned_dct = {}
         for line in f.readlines():
             owned_dct [line.split(' ')[0]] = int(line.split(' ')[1])
-    
-    mp.get_plan(required_dct, owned_dct, True, outcome=True, gold_demand=False, exp_demand=True)
+
+    mp.get_plan(required_dct, owned_dct, True, outcome=True, gold_demand=True, exp_demand=True, store=True)

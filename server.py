@@ -33,6 +33,8 @@ async def plan(request):
     gold_demand = input_data.get('gold_demand', True)
     exclude = input_data.get('exclude', [])
 
+    store = input_data.get('store', False)
+
     try:
         dct = mp.get_plan(
             required_dct, owned_dct, False,
@@ -40,6 +42,7 @@ async def plan(request):
             exp_demand=exp_demand,
             gold_demand=gold_demand,
             exclude=exclude,
+            store=store
         )
     except ValueError as e:
         return response.json({'error': True, 'reason': f'{e}'})
