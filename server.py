@@ -29,6 +29,7 @@ async def plan(request):
     required_dct = input_data.get('required', {})
 
     extra_outc = input_data.get('extra_outc', False)
+    convertion_dr = input_data.get('convertion_dr', 0.175)
     exp_demand = input_data.get('exp_demand', True)
     gold_demand = input_data.get('gold_demand', True)
     exclude = input_data.get('exclude', [])
@@ -42,7 +43,8 @@ async def plan(request):
             exp_demand=exp_demand,
             gold_demand=gold_demand,
             exclude=exclude,
-            store=store
+            store=store,
+            convertion_dr=convertion_dr
         )
     except ValueError as e:
         return response.json({'error': True, 'reason': f'{e}'})

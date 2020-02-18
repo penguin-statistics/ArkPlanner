@@ -209,7 +209,7 @@ class MaterialPlanning(object):
         self._set_lp_parameters()
 
 
-    def _get_plan_no_prioties(self, demand_lst, outcome=False, gold_demand=True, exp_demand=True):
+    def _get_plan_no_prioties(self, demand_lst, outcome=False, gold_demand=True, exp_demand=True, convertion_dr=0.18):
         """
         To solve linear programming problem without prioties.
         Args:
@@ -218,7 +218,11 @@ class MaterialPlanning(object):
             strategy: list of required clear times for each stage.
             fun: estimated total cost.
         """
-        A_ub = (np.vstack([self.probs_matrix, self.convertion_outc_matrix])
+        if convertion_dr != 0.18:
+            convertion_outc_matrix = (self.convertion_outc_matrix - self.convertion_matrix)/0.18*convertion_dr+self.convertion_matrix
+        else:
+            convertion_outc_matrix = self.convertion_outc_matrix
+        A_ub = (np.vstack([self.probs_matrix, convertion_outc_matrix])
                 if outcome else np.vstack([self.probs_matrix, self.convertion_matrix])).T
         self.farm_cost = (self.cost_lst)
         cost = (np.hstack([self.farm_cost, self.convertion_cost_lst]))
@@ -252,7 +256,7 @@ class MaterialPlanning(object):
 
 
     def get_plan(self, requirement_dct, deposited_dct={},
-                 print_output=True, outcome=False, gold_demand=True, exp_demand=True, exclude=[], store=False):
+                 print_output=True, outcome=False, gold_demand=True, exp_demand=True, exclude=[], store=False, convertion_dr=0.18):
         """
         User API. Computing the material plan given requirements and owned items.
         Args:
@@ -299,7 +303,7 @@ class MaterialPlanning(object):
             self.cost_exp_offset = self.cost_exp_offset[is_stage_alive]
             self.cost_gold_offset = self.cost_gold_offset[is_stage_alive]
 
-        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand)
+        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand, convertion_dr)
         x, status = solution.x/excp_factor, solution.status
         y, self.slack = dual_solution.x, dual_solution.slack
         self.y = y
