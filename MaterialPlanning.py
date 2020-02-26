@@ -293,15 +293,12 @@ class MaterialPlanning(object):
             BackTrace = [
                 copy.copy(self.stage_array),
                 copy.copy(self.cost_lst),
-                copy.copy(self.probs_matrix),
-                copy.copy(self.cost_exp_offset),
-                copy.copy(self.cost_gold_offset)
+                copy.copy(self.probs_matrix)
                 ]
             self.stage_array = self.stage_array[is_stage_alive]
             self.cost_lst = self.cost_lst[is_stage_alive]
             self.probs_matrix = self.probs_matrix[is_stage_alive]
-            self.cost_exp_offset = self.cost_exp_offset[is_stage_alive]
-            self.cost_gold_offset = self.cost_gold_offset[is_stage_alive]
+            self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
 
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand, convertion_dr)
         x, status = solution.x/excp_factor, solution.status
@@ -437,8 +434,7 @@ class MaterialPlanning(object):
             self.stage_array = BackTrace[0]
             self.cost_lst = BackTrace[1]
             self.probs_matrix = BackTrace[2]
-            self.cost_exp_offset = BackTrace[3]
-            self.cost_gold_offset = BackTrace[4]
+            self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
 
         if gold_demand == False and exp_demand == True:
             self.convertion_matrix = convertion_matrix_bak
