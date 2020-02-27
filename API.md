@@ -64,8 +64,8 @@ Expected exp gain in farming. Pure Gold not included.
  ```
 stage = {
 	'stage': str, # stage name, eg. '1-7'
-	'count': str, # times to farm
-	'items': dict{str: str} # item_name: item_count
+	'count': int, # times to farm
+	'items': dict{str: int} # item_name: item_count
 } 
  ```
  
@@ -75,8 +75,8 @@ Stages recommended to farm.
  ```
 synthesis= {
 	'target': str, # target item name
-	'count': str, # times to convert
-	'materials': dict{str: str} # converted_item_name: item_count
+	'count': int, # times to convert
+	'materials': dict{str: int} # converted_item_name: item_count
 } 
 ```
 
@@ -86,7 +86,7 @@ Convertions recommended.
 ```
 value = {
 	'name': str, # item name
-	'value': str # item value
+	'value': float # item value
 }
 ```
 
