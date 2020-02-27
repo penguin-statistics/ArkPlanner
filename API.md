@@ -11,11 +11,11 @@
 *default: {}*
 
 A dict of items owned, where keys are item names, i.e. 'D32钢', values are numbers of items owned.
--  ```owned```: *dict*({item_name(*str*): count(*int*)}) 
+-  ```required```: *dict*({item_name(*str*): count(*int*)}) 
 
 *default: {}*
 
-A dict of items required, where keys are item names, i.e. 'D32钢', values are numbers of items owned.
+A dict of items required, where keys are item names, i.e. 'D32钢', values are numbers of items required.
 - ```extra_outc```: *boolean*
 
 *default: False*
