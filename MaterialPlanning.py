@@ -403,8 +403,8 @@ class MaterialPlanning(object):
         }
 
         if store:
-            green = {item['name']: float(item['value'])/Price[item['name']] for item in self.values[2]['items']}
-            yellow = {item['name']: float(item['value'])/Price[item['name']] for item in self.values[3]['items']}
+            green = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in self.values[2]['items']}
+            yellow = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in self.values[3]['items']}
 
             self.res.update({'green': green,
                              'yellow': yellow})
