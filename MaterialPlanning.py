@@ -293,7 +293,7 @@ class MaterialPlanning(object):
         stage_array = self.stage_array[is_stage_alive]
         cost_lst = self.cost_lst[is_stage_alive]
         probs_matrix = self.probs_matrix[is_stage_alive]
-        stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
+        stage_dct_rv = {v:k for k,v in enumerate(stage_array)}
 
         solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand, convertion_dr, probs_matrix, convertion_matrix, convertion_outc_matrix, cost_lst, convertion_cost_lst)
         x, status = solution.x/excp_factor, solution.status
@@ -340,8 +340,8 @@ class MaterialPlanning(object):
         stages = []
         for i, t in enumerate(n_looting):
             if t >= 0.1:
-                stage_name = self.stage_array[i]
-                if self.is_gold_or_exp(stage_name, cost_lst, item_values, self.item_array, probs_matrix):
+                stage_name = stage_array[i]
+                if self.is_gold_or_exp(stage_name, cost_lst, item_values, self.item_array, probs_matrix, stage_dct_rv):
                     cost -= t*cost_lst[i]
                     gold -= t*probs_matrix[i, self.item_dct_rv['龙门币']]
                     exp -= t*(probs_matrix[i, self.item_dct_rv['基础作战记录']]*200 + 
@@ -377,7 +377,7 @@ class MaterialPlanning(object):
                 }
                 syntheses.append(synthesis)
             elif t >= 0.05:
-                target_item = item_array[np.argmax(convertion_matrix[i])]
+                target_item = self.item_array[np.argmax(convertion_matrix[i])]
                 materials = { k: '%.1f'%(v*t) for k,v in self.convertions_dct[target_item].items() }
                 synthesis = {
                     "target": target_item,
@@ -425,8 +425,8 @@ class MaterialPlanning(object):
 
         return res
 
-    def is_gold_or_exp(self, stage_name, farm_cost, item_value, item_array, probs_matrix, gate=0.1):
-        stageID = self.stage_dct_rv[stage_name]
+    def is_gold_or_exp(self, stage_name, farm_cost, item_value, item_array, probs_matrix, stage_dct_rv, gate=0.1):
+        stageID = stage_dct_rv[stage_name]
         farm_cost = farm_cost[stageID]
         itemPercentage = [(item_value[item_array[k]]*v/farm_cost, item_array[k])
                             for k,v in enumerate(probs_matrix[stageID, :])]
