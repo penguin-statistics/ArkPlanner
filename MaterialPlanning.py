@@ -209,7 +209,7 @@ class MaterialPlanning(object):
         self._set_lp_parameters()
 
 
-    def _get_plan_no_prioties(self, demand_lst, outcome=False, gold_demand=True, exp_demand=True, convertion_dr=0.18):
+    def _get_plan_no_prioties(self, demand_lst, outcome, gold_demand, exp_demand, convertion_dr, probs_matrix, convertion_matrix, convertion_outc_matrix, cost_lst, convertion_cost_lst):
         """
         To solve linear programming problem without prioties.
         Args:
@@ -219,14 +219,14 @@ class MaterialPlanning(object):
             fun: estimated total cost.
         """
         if convertion_dr != 0.18:
-            convertion_outc_matrix = (self.convertion_outc_matrix - self.convertion_matrix)/0.18*convertion_dr+self.convertion_matrix
+            convertion_outc_matrix = (convertion_outc_matrix - convertion_matrix)/0.18*convertion_dr+convertion_matrix
         else:
-            convertion_outc_matrix = self.convertion_outc_matrix
-        A_ub = (np.vstack([self.probs_matrix, convertion_outc_matrix])
-                if outcome else np.vstack([self.probs_matrix, self.convertion_matrix])).T
-        self.farm_cost = (self.cost_lst)
-        cost = (np.hstack([self.farm_cost, self.convertion_cost_lst]))
-        assert np.any(self.farm_cost>=0)
+            convertion_outc_matrix = convertion_outc_matrix
+        A_ub = (np.vstack([probs_matrix, convertion_outc_matrix])
+                if outcome else np.vstack([probs_matrix, convertion_matrix])).T
+        farm_cost = (cost_lst)
+        cost = (np.hstack([farm_cost, convertion_cost_lst]))
+        assert np.any(farm_cost>=0)
 
         excp_factor = 1.0
         dual_factor = 1.0
@@ -255,7 +255,7 @@ class MaterialPlanning(object):
         return solution, dual_solution, excp_factor
 
 
-    def get_plan(self, requirement_dct, deposited_dct={},
+    def get_plan(self, requirement_dct={}, deposited_dct={},
                  print_output=True, outcome=False, gold_demand=True, exp_demand=True, exclude=[], store=False, convertion_dr=0.18):
         """
         User API. Computing the material plan given requirements and owned items.
@@ -281,41 +281,35 @@ class MaterialPlanning(object):
 
         if gold_demand == False and exp_demand == True:
             # 如果不需要龙门币 并 需要经验, 就删掉赤金到经验的转化
-            convertion_matrix_bak = copy.copy(self.convertion_matrix)
-            convertion_outc_matrix_bak = copy.copy(self.convertion_outc_matrix)
-            convertion_cost_lst_bak = copy.copy(self.convertion_cost_lst)
-            self.convertion_matrix = self.convertion_matrix[:-1]
-            self.convertion_outc_matrix = self.convertion_outc_matrix[:-1]
-            self.convertion_cost_lst = self.convertion_cost_lst[:-1]
+            convertion_matrix = self.convertion_matrix[:-1]
+            convertion_outc_matrix = self.convertion_outc_matrix[:-1]
+            convertion_cost_lst = self.convertion_cost_lst[:-1]
+        else:
+            convertion_matrix = self.convertion_matrix
+            convertion_outc_matrix = self.convertion_outc_matrix
+            convertion_cost_lst = self.convertion_cost_lst
 
-        if exclude:
-            is_stage_alive = [False if stage in exclude else True for stage in self.stage_array]
-            BackTrace = [
-                copy.copy(self.stage_array),
-                copy.copy(self.cost_lst),
-                copy.copy(self.probs_matrix)
-                ]
-            self.stage_array = self.stage_array[is_stage_alive]
-            self.cost_lst = self.cost_lst[is_stage_alive]
-            self.probs_matrix = self.probs_matrix[is_stage_alive]
-            self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
+        is_stage_alive = [False if stage in exclude else True for stage in self.stage_array]
+        stage_array = self.stage_array[is_stage_alive]
+        cost_lst = self.cost_lst[is_stage_alive]
+        probs_matrix = self.probs_matrix[is_stage_alive]
+        stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
 
-        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand, convertion_dr)
+        solution, dual_solution, excp_factor = self._get_plan_no_prioties(demand_lst, outcome, gold_demand, exp_demand, convertion_dr, probs_matrix, convertion_matrix, convertion_outc_matrix, cost_lst, convertion_cost_lst)
         x, status = solution.x/excp_factor, solution.status
-        y, self.slack = dual_solution.x, dual_solution.slack
-        self.y = y
-        n_looting, n_convertion = x[:len(self.cost_lst)], x[len(self.cost_lst):]
+        y, slack = dual_solution.x, dual_solution.slack
+        n_looting, n_convertion = x[:len(cost_lst)], x[len(cost_lst):]
 
         if status != 0:
             raise ValueError(status_dct[status])
 
-        self.values = [{"level":'1', "items":[]},
+        values = [{"level":'1', "items":[]},
                   {"level":'2', "items":[]},
                   {"level":'3', "items":[]},
                   {"level":'4', "items":[]},
                   {"level":'5', "items":[]}]
 
-        self.item_value = dict()
+        item_values = dict()
 
         for i,item in enumerate(self.item_array):
             if y[i]>=0 and '作战记录' not in item and item not in ['龙门币', '赤金', '碳', '碳素', '碳素组', '经验'] and '技巧概要' not in item:
@@ -329,48 +323,48 @@ class MaterialPlanning(object):
                         "name": item,
                         "value": '%.5f'%(y[i])
                     }
-                self.values[int(self.item_id_array[i][-1])-1]['items'].append(item_value)
-            self.item_value[item] = y[i]
+                values[int(self.item_id_array[i][-1])-1]['items'].append(item_value)
+            item_values[item] = y[i]
 
-        for group in self.values:
+        for group in values:
             group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True)
 
-        cost = np.dot(x[:len(self.cost_lst)], self.cost_lst)
-        gcost = -np.dot(x[len(self.cost_lst):], self.convertion_matrix[:, self.item_dct_rv['龙门币']])
-        gold = np.dot(n_looting, self.probs_matrix[:, self.item_dct_rv['龙门币']])
-        exp = np.dot(n_looting, self.probs_matrix[:, self.item_dct_rv['基础作战记录']])*200 +\
-              np.dot(n_looting, self.probs_matrix[:, self.item_dct_rv['初级作战记录']])*400 +\
-              np.dot(n_looting, self.probs_matrix[:, self.item_dct_rv['中级作战记录']])*1000 +\
-              np.dot(n_looting, self.probs_matrix[:, self.item_dct_rv['经验']])
+        cost = np.dot(x[:len(cost_lst)], cost_lst)
+        gcost = -np.dot(x[len(cost_lst):], convertion_matrix[:, self.item_dct_rv['龙门币']])
+        gold = np.dot(n_looting, probs_matrix[:, self.item_dct_rv['龙门币']])
+        exp = np.dot(n_looting, probs_matrix[:, self.item_dct_rv['基础作战记录']])*200 +\
+              np.dot(n_looting, probs_matrix[:, self.item_dct_rv['初级作战记录']])*400 +\
+              np.dot(n_looting, probs_matrix[:, self.item_dct_rv['中级作战记录']])*1000 +\
+              np.dot(n_looting, probs_matrix[:, self.item_dct_rv['经验']])
 
-        self.stages = []
+        stages = []
         for i, t in enumerate(n_looting):
             if t >= 0.1:
                 stage_name = self.stage_array[i]
-                if self.is_gold_or_exp(stage_name):
-                    cost -= t*self.cost_lst[i]
-                    gold -= t*self.probs_matrix[i, self.item_dct_rv['龙门币']]
-                    exp -= t*(self.probs_matrix[i, self.item_dct_rv['基础作战记录']]*200 + 
-                                self.probs_matrix[i, self.item_dct_rv['初级作战记录']]*400 + 
-                                self.probs_matrix[i, self.item_dct_rv['中级作战记录']]*1000 +
-                                self.probs_matrix[i, self.item_dct_rv['经验']])
+                if self.is_gold_or_exp(stage_name, cost_lst, item_values, self.item_array, probs_matrix):
+                    cost -= t*cost_lst[i]
+                    gold -= t*probs_matrix[i, self.item_dct_rv['龙门币']]
+                    exp -= t*(probs_matrix[i, self.item_dct_rv['基础作战记录']]*200 + 
+                                probs_matrix[i, self.item_dct_rv['初级作战记录']]*400 + 
+                                probs_matrix[i, self.item_dct_rv['中级作战记录']]*1000 +
+                                probs_matrix[i, self.item_dct_rv['经验']])
                 if stage_name[:2] in ['SK', 'AP', 'CE', 'LS', 'PR'] and self.display_main_only:
                     continue
-                target_items = np.where(self.probs_matrix[i]>0.02)[0]
-                items = {self.item_array[idx]: float2str(self.probs_matrix[i, idx]*t)
+                target_items = np.where(probs_matrix[i]>0.02)[0]
+                items = {self.item_array[idx]: float2str(probs_matrix[i, idx]*t)
                             for idx in target_items if len(self.item_id_array[idx])==5}
                 stage = {
-                    "stage": self.stage_array[i],
+                    "stage": stage_array[i],
                     "count": float2str(t),
                     "items": items
                 }
-                self.stages.append(stage)
+                stages.append(stage)
 
 
-        self.syntheses = []
+        syntheses = []
         for i,t in enumerate(n_convertion):
             if t >= 0.1:
-                target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
+                target_item = self.item_array[np.argmax(convertion_matrix[i])]
                 if target_item in ['经验', '龙门币']:
                     # 不显示经验和龙门币的转化
                     continue
@@ -381,73 +375,61 @@ class MaterialPlanning(object):
                     "count": str(int(t+0.9)),
                     "materials": materials
                 }
-                self.syntheses.append(synthesis)
+                syntheses.append(synthesis)
             elif t >= 0.05:
-                target_item = self.item_array[np.argmax(self.convertion_matrix[i])]
+                target_item = item_array[np.argmax(convertion_matrix[i])]
                 materials = { k: '%.1f'%(v*t) for k,v in self.convertions_dct[target_item].items() }
                 synthesis = {
                     "target": target_item,
                     "count": '%.1f'%t,
                     "materials": materials
                 }
-                self.syntheses.append(synthesis)
+                syntheses.append(synthesis)
 
-        self.res = {
+        res = {
             "cost": int(cost),
             "gcost": int(gcost),
             'gold': int(gold),
             'exp': int(exp),
-            "stages": self.stages,
-            "syntheses": self.syntheses,
-            "values": list(reversed(self.values))
+            "stages": stages,
+            "syntheses": syntheses,
+            "values": list(reversed(values))
         }
 
         if store:
-            green = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in self.values[2]['items']}
-            yellow = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in self.values[3]['items']}
+            green = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in values[2]['items']}
+            yellow = {item['name']: '%.3f' % (float(item['value'])/Price[item['name']]) for item in values[3]['items']}
 
-            self.res.update({'green': green,
+            res.update({'green': green,
                              'yellow': yellow})
 
         if print_output:
-            print('Estimated total cost: %d, gold: %d, exp: %d.'%(self.res['cost'],self.res['gold'],self.res['exp']))
+            print('Estimated total cost: %d, gold: %d, exp: %d.'%(res['cost'], res['gold'], res['exp']))
             print('Loot at following stages:')
-            for stage in self.stages:
+            for stage in stages:
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
                 print('Stage ' + stage['stage'] + '(%s times) ===> '%stage['count']
                 + ', '.join(display_lst))
 
             print('\nSynthesize following items:')
-            for synthesis in self.syntheses:
+            for synthesis in syntheses:
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
                 print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
 
             print('\nItems Values:')
-            for i, group in reversed(list(enumerate(self.values))):
+            for i, group in reversed(list(enumerate(values))):
                 display_lst = ['%s:%s'%(item['name'], item['value']) for item in group['items']]
                 print('Level %d items: '%(i+1))
                 print(', '.join(display_lst))
 
+        return res
 
-        if exclude:
-            self.stage_array = BackTrace[0]
-            self.cost_lst = BackTrace[1]
-            self.probs_matrix = BackTrace[2]
-            self.stage_dct_rv = {v:k for k,v in enumerate(self.stage_array)}
-
-        if gold_demand == False and exp_demand == True:
-            self.convertion_matrix = convertion_matrix_bak
-            self.convertion_outc_matrix = convertion_outc_matrix_bak
-            self.convertion_cost_lst = convertion_cost_lst_bak
-
-        return self.res
-
-    def is_gold_or_exp(self, stage_name, gate=0.1):
+    def is_gold_or_exp(self, stage_name, farm_cost, item_value, item_array, probs_matrix, gate=0.1):
         stageID = self.stage_dct_rv[stage_name]
-        farm_cost = self.farm_cost[stageID]
-        itemPercentage = [(self.item_value[self.item_array[k]]*v/farm_cost, self.item_array[k])
-                            for k,v in enumerate(self.probs_matrix[stageID, :])]
+        farm_cost = farm_cost[stageID]
+        itemPercentage = [(item_value[item_array[k]]*v/farm_cost, item_array[k])
+                            for k,v in enumerate(probs_matrix[stageID, :])]
         display_lst = [x for x in sorted(itemPercentage, key=lambda x:x[0], reverse=True) if x[0] > gate]
         if display_lst:
             return display_lst[0][1] in ['基础作战记录', '龙门币', '初级作战记录', '中级作战记录', '经验']
