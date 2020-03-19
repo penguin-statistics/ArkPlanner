@@ -83,7 +83,16 @@ class MaterialPlanning(object):
         additional_items = {'30135': u'D32钢', '30125': u'双极纳米片',
                             '30115': u'聚合剂', '00010':'经验', '4001':'龙门币',
                             '31014':'聚合凝胶', '31024':'炽合金块', '31013':'凝胶',
-                            '31023':'炽合金'
+                            '31023':'炽合金', '3303':'技巧概要·卷3', '00030':'家具零件',
+                            '3211': '先锋芯片', '3212': '先锋芯片组', '3213': '先锋双芯片',
+                            '3221': '近卫芯片', '3222': '近卫芯片组', '3223': '近卫双芯片',
+                            '3231': '重装芯片', '3232': '重装芯片组', '3233': '重装双芯片',
+                            '3241': '狙击芯片', '3242': '狙击芯片组', '3243': '狙击双芯片',
+                            '3251': '术师芯片', '3252': '术师芯片组', '3253': '术师双芯片',
+                            '3261': '医疗芯片', '3262': '医疗芯片组', '3263': '医疗双芯片',
+                            '3271': '辅助芯片', '3272': '辅助芯片组', '3273': '辅助双芯片',
+                            '3281': '特种芯片', '3282': '特种芯片组', '3283': '特种双芯片',
+                            '9001': '采购凭证', '32001': '芯片助剂'
                             }
         item_dct = {}
         stage_dct = {}
@@ -310,21 +319,25 @@ class MaterialPlanning(object):
                   {"level":'5', "items":[]}]
 
         item_values = dict()
+        for i,item in enumerate(self.item_array):
+            item_values[item] = y[i]
 
         for i,item in enumerate(self.item_array):
-            if y[i]>=0 and '作战记录' not in item and item not in ['龙门币', '赤金', '碳', '碳素', '碳素组', '经验'] and '技巧概要' not in item:
-                if y[i]>0.1:
+            v = item_values[item]
+            if y[i]>=0 and '作战记录' not in item and item not in ['龙门币', '赤金', '经验']:
+                if v>0.1:
                     item_value = {
                         "name": item,
-                        "value": '%.2f'%y[i]
+                        "value": '%.2f'% v
                     }
                 else:
                     item_value = {
                         "name": item,
-                        "value": '%.5f'%(y[i])
+                        "value": '%.5f'% v
                     }
+                if not 0 < int(self.item_id_array[i][-1]) < 6:
+                    continue
                 values[int(self.item_id_array[i][-1])-1]['items'].append(item_value)
-            item_values[item] = y[i]
 
         for group in values:
             group["items"] = sorted(group["items"], key=lambda k: float(k['value']), reverse=True)
@@ -348,11 +361,11 @@ class MaterialPlanning(object):
                                 probs_matrix[i, self.item_dct_rv['初级作战记录']]*400 + 
                                 probs_matrix[i, self.item_dct_rv['中级作战记录']]*1000 +
                                 probs_matrix[i, self.item_dct_rv['经验']])
-                if stage_name[:2] in ['SK', 'AP', 'CE', 'LS', 'PR'] and self.display_main_only:
+                if stage_name[:2] in ['CE', 'LS'] and self.display_main_only:
                     continue
                 target_items = np.where(probs_matrix[i]>0.02)[0]
                 items = {self.item_array[idx]: float2str(probs_matrix[i, idx]*t)
-                            for idx in target_items if len(self.item_id_array[idx])==5}
+                            for idx in target_items if self.item_array[idx] not in ['龙门币']}
                 stage = {
                     "stage": stage_array[i],
                     "count": float2str(t),
@@ -365,11 +378,12 @@ class MaterialPlanning(object):
         for i,t in enumerate(n_convertion):
             if t >= 0.1:
                 target_item = self.item_array[np.argmax(convertion_matrix[i])]
-                if target_item in ['经验', '龙门币']:
+                if target_item in ['经验', '龙门币', '家具零件']:
                     # 不显示经验和龙门币的转化
                     continue
-                else:
-                    materials = {k: str(v*int(t+0.9)) for k,v in self.convertions_dct[target_item].items()}
+                materials = {k: str(v*int(t+0.9)) for k,v in self.convertions_dct[target_item].items()}
+                if '芯片' in target_item:
+                    materials = {k: str(v*int(t+0.9)) for k,v in self.convertions_dct[target_item].items() if k != '经验'}
                 synthesis = {
                     "target": target_item,
                     "count": str(int(t+0.9)),
@@ -426,23 +440,25 @@ class MaterialPlanning(object):
         return res
 
     def is_gold_or_exp(self, stage_name, farm_cost, item_value, item_array, probs_matrix, stage_dct_rv, gate=0.1):
-        stageID = stage_dct_rv[stage_name]
-        farm_cost = farm_cost[stageID]
-        itemPercentage = [(item_value[item_array[k]]*v/farm_cost, item_array[k])
-                            for k,v in enumerate(probs_matrix[stageID, :])]
-        display_lst = [x for x in sorted(itemPercentage, key=lambda x:x[0], reverse=True) if x[0] > gate]
-        if display_lst:
-            return display_lst[0][1] in ['基础作战记录', '龙门币', '初级作战记录', '中级作战记录', '经验']
+        return stage_name[:2] in ['LS', 'CE']
 
     def update_stage_processing(self, stage_name: str, cost: int):
-        self.stage_array.append(stage_name)
-        self.stage_dct_rv.update({stage_name: len(self.stage_array)-1})
-        self.cost_lst = np.append(self.cost_lst, cost)
+        if stage_name not in self.stage_array:
+            self.stage_array.append(stage_name)
+            self.stage_dct_rv.update({stage_name: len(self.stage_array)-1})
+            self.cost_lst = np.append(self.cost_lst, cost)
+        else:
+            self.cost_lst[self.stage_dct_rv[stage_name]] = cost
 
     def update_droprate(self):
         self.update_droprate_processing('S4-6', '龙门币', 3228)
         self.update_droprate_processing('S5-2', '龙门币', 2484)
         self.update_droprate_processing('S6-4', '龙门币', 2700, 'update')
+        self.update_droprate_processing('SK-1', '家具零件', 1, 'update')
+        self.update_droprate_processing('SK-2', '家具零件', 3, 'update')
+        self.update_droprate_processing('SK-3', '家具零件', 5, 'update')
+        self.update_droprate_processing('SK-4', '家具零件', 7, 'update')
+        self.update_droprate_processing('SK-5', '家具零件', 10, 'update')
         self.update_droprate_processing('CE-1', '龙门币', 1700, 'update')
         self.update_droprate_processing('CE-2', '龙门币', 2800, 'update')
         self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
@@ -453,6 +469,29 @@ class MaterialPlanning(object):
         self.update_droprate_processing('LS-3', '经验', 3900, 'update')
         self.update_droprate_processing('LS-4', '经验', 5900, 'update')
         self.update_droprate_processing('LS-5', '经验', 7400, 'update')
+
+        self.update_droprate_processing('AP-1', '采购凭证', 3, 'update')
+        self.update_droprate_processing('AP-2', '采购凭证', 6, 'update')
+        self.update_droprate_processing('AP-3', '采购凭证', 10, 'update')
+        self.update_droprate_processing('AP-4', '采购凭证', 15, 'update')
+        self.update_droprate_processing('AP-5', '采购凭证', 21, 'update')
+
+        self.update_droprate_processing('PR-A-1', '重装芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-A-1', '医疗芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-B-1', '狙击芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-B-1', '术师芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-C-1', '先锋芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-C-1', '辅助芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-D-1', '近卫芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-D-1', '特种芯片', 1/2, 'update')
+        self.update_droprate_processing('PR-A-2', '重装芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-A-2', '医疗芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-B-2', '狙击芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-B-2', '术师芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-C-2', '先锋芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-C-2', '辅助芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-D-2', '近卫芯片组', 1/2, 'update')
+        self.update_droprate_processing('PR-D-2', '特种芯片组', 1/2, 'update')
 
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
@@ -476,20 +515,87 @@ class MaterialPlanning(object):
         self.update_convertion_processing(('经验', 200), 0, {'基础作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('经验', 400), 0, {'初级作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('经验', 1000), 0, {'中级作战记录': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('技巧概要·卷3', 1), 0, {'技巧概要·卷2': 3}, ({'技巧概要·卷3':1}, 1, 1))
+        self.update_convertion_processing(('技巧概要·卷2', 1), 0, {'技巧概要·卷1': 3}, ({'技巧概要·卷2':1}, 1, 1))
+#        self.update_convertion_processing(('经验', 2000), 0, {'高级作战记录': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('经验', 400), 0, {'赤金': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('家具零件', 4), 200, {'碳': 1}, ({'碳': 1}, 0.5, 1))
+        self.update_convertion_processing(('家具零件', 8), 200, {'碳素': 1}, ({'碳素': 1}, 0.5, 1))
+        self.update_convertion_processing(('家具零件', 12), 200, {'碳素组': 1}, ({'碳素组': 1}, 0.5, 1))
+        self.update_convertion_processing(('重装芯片', 2), 0, {'医疗芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('医疗芯片', 2), 0, {'重装芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('狙击芯片', 2), 0, {'术师芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('术师芯片', 2), 0, {'狙击芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('先锋芯片', 2), 0, {'辅助芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('辅助芯片', 2), 0, {'先锋芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('特种芯片', 2), 0, {'近卫芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('近卫芯片', 2), 0, {'特种芯片': 3}, ({'重装芯片': 1, '医疗芯片':1,
+                '狙击芯片': 1, '术师芯片': 1, '先锋芯片': 1, '辅助芯片': 1, '近卫芯片': 1, '特种芯片': 1}, 1, 8))
+        self.update_convertion_processing(('重装芯片组', 2), 0, {'医疗芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('医疗芯片组', 2), 0, {'重装芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('狙击芯片组', 2), 0, {'术师芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('术师芯片组', 2), 0, {'狙击芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('先锋芯片组', 2), 0, {'辅助芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('辅助芯片组', 2), 0, {'先锋芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('特种芯片组', 2), 0, {'近卫芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('近卫芯片组', 2), 0, {'特种芯片组': 3}, ({'重装芯片组': 1, '医疗芯片组':1,
+                '狙击芯片组': 1, '术师芯片组': 1, '先锋芯片组': 1, '辅助芯片组': 1, '近卫芯片组': 1, '特种芯片组': 1}, 1, 8))
+        self.update_convertion_processing(('芯片助剂', 1), 0, {'采购凭证': 90}, ({}, 0, 1))
+        self.update_convertion_processing(('近卫双芯片', 1), 0, {'近卫芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('重装双芯片', 1), 0, {'重装芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('医疗双芯片', 1), 0, {'医疗芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('特种双芯片', 1), 0, {'特种芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('辅助双芯片', 1), 0, {'辅助芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('术师双芯片', 1), 0, {'术师芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('狙击双芯片', 1), 0, {'狙击芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('先锋双芯片', 1), 0, {'先锋芯片组': 2, '经验': 1000/3, '芯片助剂': 1}, ({}, 0, 1))
+
         # 这里一定保证这一条在最后!
         self.update_convertion_processing(('经验', 400), 0, {'赤金': 1}, ({}, 0, 1))
 
     def update_stage(self):
-        self.update_stage_processing('LS-1', 10)
-        self.update_stage_processing('LS-2', 15)
-        self.update_stage_processing('LS-3', 20)
-        self.update_stage_processing('LS-4', 25)
-        self.update_stage_processing('LS-5', 30)
         self.update_stage_processing('CE-1', 10)
         self.update_stage_processing('CE-2', 15)
         self.update_stage_processing('CE-3', 20)
         self.update_stage_processing('CE-4', 25)
         self.update_stage_processing('CE-5', 30)
+        self.update_stage_processing('PR-A-1', 18)
+        self.update_stage_processing('PR-A-2', 36)
+        self.update_stage_processing('PR-B-1', 18)
+        self.update_stage_processing('PR-B-2', 36)
+        self.update_stage_processing('PR-C-1', 18)
+        self.update_stage_processing('PR-C-2', 36)
+        self.update_stage_processing('PR-D-1', 18)
+        self.update_stage_processing('PR-D-2', 36)
+        self.update_stage_processing('CE-1', 10)
+        self.update_stage_processing('CE-2', 15)
+        self.update_stage_processing('CE-3', 20)
+        self.update_stage_processing('CE-4', 25)
+        self.update_stage_processing('CE-5', 30)
+        self.update_stage_processing('LS-1', 10)
+        self.update_stage_processing('LS-2', 15)
+        self.update_stage_processing('LS-3', 20)
+        self.update_stage_processing('LS-4', 25)
+        self.update_stage_processing('LS-5', 30)
+        self.update_stage_processing('AP-1', 10)
+        self.update_stage_processing('AP-2', 15)
+        self.update_stage_processing('AP-3', 20)
+        self.update_stage_processing('AP-4', 25)
+        self.update_stage_processing('AP-5', 30)
 
     def update_droprate_processing(self, stage, item, droprate, mode='add'):
         if stage not in self.stage_array:
