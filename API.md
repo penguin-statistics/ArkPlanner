@@ -26,16 +26,16 @@ Whether extra outcome of convertion is considered.
 *default: 0.18*
 
 The drop rate of extra outcome.
-- ```exp_demand```: *boolean*
+- ```exp_demand```: *boolean* or *int*
 
 *default: True*
 
-Whether Battle Record (作战记录) is considered valuable. If True, requirement of Battle Record is set to ```1e9```.
-- ```gold_demand```: *boolean*
+Whether Battle Record (作战记录) is considered valuable. If True, requirement of Battle Record is set to ```1e9```. If input is an integer, the requirement of experiment is set to be euqal to the input.
+- ```gold_demand```: *boolean* or *int*
 
 *default: True*
 
-Whether LMD (龙门币) is considered valuable. If True, requirement of LMD is set to ```1e9```. If False, the value of Pure Gold is also considered 0.
+Whether LMD (龙门币) is considered valuable. If True, requirement of LMD is set to ```1e9```. If False, the value of Pure Gold is also considered 0. If input is an integer, the requirement of LMD is set to be euqal to the input.
 - ```exclude```: list(str)  **NEW**
 
  *default: []*
