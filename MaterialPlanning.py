@@ -392,6 +392,9 @@ class MaterialPlanning(object):
                 syntheses.append(synthesis)
             elif t >= 0.05:
                 target_item = self.item_array[np.argmax(convertion_matrix[i])]
+                if target_item in ['经验', '龙门币', '家具零件']:
+                    # 不显示经验和龙门币的转化
+                    continue
                 materials = { k: '%.1f'%(v*t) for k,v in self.convertions_dct[target_item].items() }
                 synthesis = {
                     "target": target_item,
