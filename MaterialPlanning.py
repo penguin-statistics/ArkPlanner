@@ -435,13 +435,7 @@ class MaterialPlanning(object):
         return res
 
     def is_gold_or_exp(self, stage_name, farm_cost, item_value, item_array, probs_matrix, stage_dct_rv, gate=0.1):
-        stageID = stage_dct_rv[stage_name]
-        farm_cost = farm_cost[stageID]
-        itemPercentage = [(item_value[item_array[k]]*v/farm_cost, item_array[k])
-                            for k,v in enumerate(probs_matrix[stageID, :])]
-        display_lst = [x for x in sorted(itemPercentage, key=lambda x:x[0], reverse=True) if x[0] > gate]
-        if display_lst:
-            return display_lst[0][1] in ['基础作战记录', '龙门币', '初级作战记录', '中级作战记录', '经验']
+        return stage_name[:2] in ['LS', 'CE']
 
     def update_stage_processing(self, stage_name: str, cost: int):
         self.stage_array.append(stage_name)
