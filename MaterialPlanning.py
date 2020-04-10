@@ -282,9 +282,15 @@ class MaterialPlanning(object):
         for k, v in requirement_dct.items():
             demand_lst[self.item_dct_rv[k]] = v
         if gold_demand:
-            demand_lst[self.item_dct_rv['龙门币']] = 1e9
+            try:
+                demand_lst[self.item_dct_rv['龙门币']] = 1e9 if gold_demand is True else int(gold_demand)
+            except:
+                demand_lst[self.item_dct_rv['龙门币']] = 1e9
         if exp_demand:
-            demand_lst[self.item_dct_rv['经验']] = 1e9
+            try:
+                demand_lst[self.item_dct_rv['经验']] = 1e9 if exp_demand is True else int(exp_demand)
+            except:
+                demand_lst[self.item_dct_rv['经验']] = 1e9
         for k, v in deposited_dct.items():
             demand_lst[self.item_dct_rv[k]] -= v
 
