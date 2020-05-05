@@ -194,9 +194,12 @@ class MaterialPlanning(object):
             path_stats: string. local path to the dropping rate stats data.
             path_rules: string. local path to the composing rules data.
         """
-        print('Requesting data from web resources (i.e., penguin-stats.io)...', end=' ')
-        material_probs, self.convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
-        print('done.')
+        try:
+            print('Requesting data from web resources (i.e., penguin-stats.io)...', end=' ')
+            material_probs, self.convertion_rules = request_data(penguin_url+url_stats, penguin_url+url_rules, path_stats, path_rules)
+            print('done.')
+        except:
+            return
 
         if filter_freq:
             filtered_probs = []
