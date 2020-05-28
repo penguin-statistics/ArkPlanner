@@ -91,7 +91,19 @@ value = {
 ```
 
 Item values.
-- ```green```: *dict* {item *(str)*: value *(float)* }  **NEW**
-- ```yellow```: *dict* {item *(str)*: value *(float)* }  **NEW**
+- ```green```: *dict* {item *(str)*: value *(float)* }
+- ```yellow```: *dict* {item *(str)*: value *(float)* }
 
 Value of one piece of green/yellow ticket when buying target items in the store.
+
+- ```input_lang```: *string* **NEW**
+- ```output_lang```: *string* **NEW**
+
+Languages of input and output data. Available Languages: ```['zh', 'en', 'ja', 'ko']```, and ```'id'``` for item ids. 
+Default value: ```input_lang = 'zh', output_lang = 'zh'```
+
+- ```server```: *string* **NEW**
+
+Using active stages from this server. Available Servers: ```['CN', 'US', 'JP', 'KR']```.
+Default value: ```server = 'CN'```
+
