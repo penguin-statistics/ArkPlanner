@@ -19,5 +19,5 @@ if __name__ == '__main__':
         for line in f.readlines():
             owned_dct[line.split(' ')[0]] = int(line.split(' ')[1])
 
-    mp.get_plan(required_dct, owned_dct, print_output=True, outcome=True, gold_demand=True, exp_demand=True, store=True, output_lang='zh', server='CN')
-    #print(mp.valid_stages)
+    mp.get_plan(required_dct, owned_dct, print_output='zh', outcome=True,
+                gold_demand=True, exp_demand=True, store=True, output_lang='ja', server='CN')

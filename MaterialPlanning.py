@@ -107,8 +107,6 @@ class MaterialPlanning(object):
             for stage in stages[server]:
                 if stage['stageId'] not in stage_dct_rv or 'dropInfos' not in stage:
                     continue
-                if (stage['code_i18n'][LanguageMap[server]])[0] == '7' and server == 'US':
-                    print(stage)
                 valid_stages[server][stage_dct_rv[stage['stageId']]] = True
                 stage_code[server][stage_dct_rv[stage['stageId']]] =  stage['code_i18n'][LanguageMap[server]]
                 stage_name_rv[stage['code_i18n']['zh']] = stage_dct_rv[stage['stageId']]
@@ -444,13 +442,13 @@ class MaterialPlanning(object):
             print('Loot at following stages:')
             for stage in stages:
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
-                print('Stage ' + stage['stage'] + '(%s times) ===> '%stage['count']
+                print('Stage ' + self.stage_code[server][self.stage_dct_rv[stage['stage']]] + '(%s times) ===> '%stage['count']
                 + ', '.join(display_lst))
 
             print('\nSynthesize following items:')
             for synthesis in syntheses:
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
-                print(synthesis['target'] + '(%s) <=== '%synthesis['count']
+                print(self.item_id_to_name[synthesis['target']][output_lang] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
 
             print('\nItems Values:')
