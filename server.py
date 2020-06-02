@@ -1,6 +1,9 @@
+import time
+import asyncio
+
+import click
 from sanic import Sanic, response
 from MaterialPlanning import MaterialPlanning
-import time, codecs
 
 app = Sanic()
 
@@ -10,54 +13,62 @@ app.static('/fonts', './ArkPlannerWeb/fonts')
 app.static('/img', './ArkPlannerWeb/img')
 app.static('/js', './ArkPlannerWeb/js')
 
-
 mp = MaterialPlanning()
 mp.update()
-last_updated = time.time()
 
 @app.route("/plan", methods=['POST'])
 async def plan(request):
-    global last_updated
     try:
         input_data = request.json
-        owned_dct = input_data["owned"]
-        required_dct = input_data["required"]
     except:
-        return response.json({"error": True, "reason": "Uninterpretable input"})
+        return response.json({'error': True, 'reason': 'Uninterpretable input'})
+
+    # get value by key or default
+    # weak type checking only
+    owned_dct = input_data.get('owned', {})
+    required_dct = input_data.get('required', {})
+
+    extra_outc = input_data.get('extra_outc', False)
+    convertion_dr = input_data.get('convertion_dr', 0.18)
+    exp_demand = input_data.get('exp_demand', True)
+    gold_demand = input_data.get('gold_demand', True)
+    exclude = input_data.get('exclude', [])
+
+    store = input_data.get('store', False)
 
     try:
-        extra_outc = request.json["extra_outc"]
-    except:
-        extra_outc = False
-
-    try:
-        exp_demand = request.json["exp_demand"]
-    except:
-        exp_demand = True
-
-    try:
-        gold_demand = request.json["gold_demand"]
-    except:
-        gold_demand = True
-
-    try:
-        if time.time() - last_updated > 60 * 30:
-            mp.update()
-            last_updated = time.time()
-        dct = mp.get_plan(required_dct, owned_dct, False, 
-                          outcome=extra_outc, exp_demand=exp_demand, gold_demand=gold_demand)
+        dct = mp.get_plan(
+            required_dct, owned_dct, False,
+            outcome=extra_outc,
+            exp_demand=exp_demand,
+            gold_demand=gold_demand,
+            exclude=exclude,
+            store=store,
+            convertion_dr=convertion_dr
+        )
     except ValueError as e:
-        return response.json({"error": True, "reason": str(e)})
-
+        return response.json({'error': True, 'reason': f'{e}'})
+    except Exception as e:
+        return response.json({'error': True, 'reason': 'Unexpected Error'})
     return response.json(dct)
 
-# def get_costume_counts(countdir='costume_counts.txt'):
-#     global costume_counts
-#     try:
-#         with codecs.open(countdir, 'r', 'utf-8') as f:
-#             costume_counts = f.readline()
+
+@app.listener('after_server_start')
+async def update_each_half_hour(app, loop):
+    while True:
+        mp.update()
+        await asyncio.sleep(30 * 60)
 
 
+@click.command()
+@click.option('-h', '--host', default='127.0.0.1', help='Binding address')
+@click.option('-p', '--port', default=8000, help='Binding port')
+@click.option('-w', '--workers', default=1, help='Number of worker')
+@click.option('--debug', is_flag=True, default=False, help='Trigger Sanic debug mode')
+@click.option('--log', is_flag=True, default=False, help='Trigger Sanic request log(will slows server)')
+def start_server(host, port, workers, debug, log):
+    app.run(host=host, port=port, workers=workers, debug=debug, access_log=log)
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000)
+
+if __name__ == '__main__':
+    start_server()
