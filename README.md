@@ -8,6 +8,10 @@ ArkPlanner is a tiny python tool for the mobile game Arknight. The variety of it
 
 *Note: the linear programming is based on the items dropping expectations estimated by the existing samples. Due to the randomness, divergence may occur especially when you require a small number of items.*
 
+### Planner API
+
+[API ReadMe](https://github.com/ycremar/ArkPlanner/blob/master/API.md)
+
 ### 安装说明 - Installation
 ----
 
