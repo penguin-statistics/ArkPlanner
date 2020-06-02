@@ -93,11 +93,13 @@ class MaterialPlanning(object):
                 stage_array.append(drop['stageId'])
         stage_dct_rv = {v: k for k, v in enumerate(stage_array)}
         servers = ['CN', 'US', 'JP', 'KR']
+        languages = ['zh', 'en', 'ja', 'ko']
 
         valid_stages = {server: [False]*len(stage_array) for server in servers}
         stage_code = {server: ['' for _ in stage_array] for server in servers}
         stages = {}
-        stage_name_rv = {}
+        stage_name_rv = {lang: {} for lang in languages}
+        stage_id_to_name = {}
         for server in servers:
             try:
                 stages[server] = get_json(f'stages?server={server}')
@@ -109,7 +111,8 @@ class MaterialPlanning(object):
                     continue
                 valid_stages[server][stage_dct_rv[stage['stageId']]] = True
                 stage_code[server][stage_dct_rv[stage['stageId']]] =  stage['code_i18n'][LanguageMap[server]]
-                stage_name_rv[stage['code_i18n']['zh']] = stage_dct_rv[stage['stageId']]
+                for lang in languages: stage_name_rv[lang][stage['code_i18n'][lang]] = stage_dct_rv[stage['stageId']]
+                stage_id_to_name[stage['stageId']] = {lang: stage['code_i18n'][lang] for lang in languages}
 
         try:
             self.get_item_id()
@@ -122,6 +125,7 @@ class MaterialPlanning(object):
         self.stage_code = stage_code
         self.valid_stages = valid_stages
         self.stage_name_rv = stage_name_rv
+        self.stage_id_to_name = stage_id_to_name
 
         # To format dropping records into sparse probability matrix
         self.cost_lst = np.zeros(len(self.stage_array))
@@ -397,7 +401,7 @@ class MaterialPlanning(object):
                 items = {self.item_id_to_name[self.item_array[idx]][output_lang]: float2str(probs_matrix[i, idx]*t)
                             for idx in target_items if len(self.item_array[idx])==5 and self.item_array[idx] != 'furni'}
                 stage = {
-                    "stage": stage_array[i],
+                    "stage": self.stage_id_to_name[stage_array[i]][output_lang],
                     "count": float2str(t),
                     "items": items
                 }
@@ -442,8 +446,8 @@ class MaterialPlanning(object):
             print('Loot at following stages:')
             for stage in stages:
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
-                print('Stage ' + self.stage_code[server][self.stage_dct_rv[stage['stage']]] + '(%s times) ===> '%stage['count']
-                + ', '.join(display_lst))
+                print('Stage ' + self.stage_code[server][self.stage_name_rv[output_lang][stage['stage']]]
+                      + '(%s times) ===> '%stage['count'] + ', '.join(display_lst))
 
             print('\nSynthesize following items:')
             for synthesis in syntheses:
@@ -524,11 +528,11 @@ class MaterialPlanning(object):
             self.valid_stages[server].append(True)
 
     def update_droprate_processing(self, stage, item, droprate, mode='add'):
-        if stage not in self.stage_name_rv:
+        if stage not in self.stage_name_rv['zh']:
             return
         if item not in self.item_name_rv:
             return
-        stageid = self.stage_name_rv[stage]
+        stageid = self.stage_name_rv['zh'][stage]
         itemid = self.item_name_rv[item]
         if mode == 'add':
             self.probs_matrix[stageid][itemid] += droprate
