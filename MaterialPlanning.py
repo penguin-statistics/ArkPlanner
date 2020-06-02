@@ -310,7 +310,7 @@ class MaterialPlanning(object):
             except:
                 demand_lst[self.item_name_rv['作战记录']] = 1e9
         for k, v in deposited_dct.items():
-            demand_lst[self.item_dct_rv[k]] -= v
+            demand_lst[self.item_dct_rv[self.item_name_to_id[input_lang][k]]] -= v
 
         if gold_demand == False and exp_demand == True:
             # 如果不需要龙门币 并 需要经验, 就删掉赤金到经验的转化
