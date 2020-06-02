@@ -55,7 +55,7 @@ async def plan(request):
     except ValueError as e:
         return response.json({'error': True, 'reason': f'{e}'})
     except Exception as e:
-        return response.json({'error': True, 'reason': 'Unexpected Error'})
+        return response.json({'error': True, 'reason': f'{e}'})
     return response.json(dct)
 
 
