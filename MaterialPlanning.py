@@ -418,7 +418,7 @@ class MaterialPlanning(object):
                 materials = {self.item_id_to_name[self.item_name_to_id['zh'][k]][output_lang]: f'{v * t:.1f}'
                              for k, v in self.convertions_dct[self.item_id_to_name[target_item]['zh']].items()}
                 synthesis = {
-                    "target": target_item,
+                    "target": self.item_id_to_name[target_item][output_lang],
                     "count": str(int(t+0.9)),
                     "materials": materials
                 }
@@ -452,7 +452,7 @@ class MaterialPlanning(object):
             print('\nSynthesize following items:')
             for synthesis in syntheses:
                 display_lst = [k + '(%s) '%synthesis['materials'][k] for k in synthesis['materials']]
-                print(self.item_id_to_name[synthesis['target']][output_lang] + '(%s) <=== '%synthesis['count']
+                print(synthesis['target'] + '(%s) <=== '%synthesis['count']
                 + ', '.join(display_lst))
 
             print('\nItems Values:')
@@ -474,11 +474,6 @@ class MaterialPlanning(object):
         self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
         self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
         self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
-        self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
-        self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
-        self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
-        self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
-        self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
 
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
@@ -502,6 +497,7 @@ class MaterialPlanning(object):
         self.update_convertion_processing(('作战记录', 200), 0, {'基础作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('作战记录', 400), 0, {'初级作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('作战记录', 1000), 0, {'中级作战记录': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('作战记录', 1000), 0, {'高级作战记录': 1}, ({}, 0, 1))
         # 这里一定保证这一条在最后!
         # ENSURE THIS LINE IS THE LAST LINE!
         self.update_convertion_processing(('作战记录', 400), 0, {'赤金': 1}, ({}, 0, 1))
