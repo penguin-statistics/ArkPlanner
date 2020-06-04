@@ -474,6 +474,11 @@ class MaterialPlanning(object):
         self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
         self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
         self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
+        self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
+        self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
+        self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
+        self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
+        self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
 
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
@@ -525,8 +530,10 @@ class MaterialPlanning(object):
 
     def update_droprate_processing(self, stage, item, droprate, mode='add'):
         if stage not in self.stage_name_rv['zh']:
+            print(f'stage {stage} not found')
             return
         if item not in self.item_name_rv:
+            print(f'item {item} not found')
             return
         stageid = self.stage_name_rv['zh'][stage]
         itemid = self.item_name_rv[item]
