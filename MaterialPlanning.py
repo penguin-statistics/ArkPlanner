@@ -116,11 +116,6 @@ class MaterialPlanning(object):
                 # Fix KeyError('id')
                 stage_id_to_name[stage['stageId']]["id"] = stage['stageId']
                 
-         try:
-             self.get_item_id()
-         except Exception as e:
-                
-
         try:
             self.get_item_id()
         except Exception as e:
