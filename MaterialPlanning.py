@@ -113,7 +113,9 @@ class MaterialPlanning(object):
                 stage_code[server][stage_dct_rv[stage['stageId']]] =  stage['code_i18n'][LanguageMap[server]]
                 for lang in languages: stage_name_rv[lang][stage['code_i18n'][lang]] = stage_dct_rv[stage['stageId']]
                 stage_id_to_name[stage['stageId']] = {lang: stage['code_i18n'][lang] for lang in languages}
-
+                # Fix KeyError('id')
+                stage_id_to_name[stage['stageId']]["id"] = stage['stageId']
+                
         try:
             self.get_item_id()
         except Exception as e:
