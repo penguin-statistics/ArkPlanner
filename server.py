@@ -35,6 +35,9 @@ async def plan(request):
     exclude = input_data.get('exclude', [])
 
     store = input_data.get('store', False)
+    input_lang = input_data.get('input_lang', 'zh')
+    output_lang = input_data.get('output_lang', 'zh')
+    server = input_data.get('server', 'CN')
 
     try:
         dct = mp.get_plan(
@@ -44,12 +47,15 @@ async def plan(request):
             gold_demand=gold_demand,
             exclude=exclude,
             store=store,
-            convertion_dr=convertion_dr
+            convertion_dr=convertion_dr,
+            input_lang=input_lang,
+            output_lang=output_lang,
+            server=server
         )
     except ValueError as e:
         return response.json({'error': True, 'reason': f'{e}'})
     except Exception as e:
-        return response.json({'error': True, 'reason': 'Unexpected Error'})
+        return response.json({'error': True, 'reason': f'{e}'})
     return response.json(dct)
 
 

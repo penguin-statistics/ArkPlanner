@@ -17,6 +17,7 @@ if __name__ == '__main__':
     with codecs.open('owned.txt', 'r', 'utf-8') as f:
         owned_dct = {}
         for line in f.readlines():
-            owned_dct [line.split(' ')[0]] = int(line.split(' ')[1])
+            owned_dct[line.split(' ')[0]] = int(line.split(' ')[1])
 
-    mp.get_plan(required_dct, owned_dct, True, outcome=True, gold_demand=True, exp_demand=True, store=True)
+    mp.get_plan(required_dct, owned_dct, print_output='zh', outcome=True,
+                gold_demand=True, exp_demand=True, store=True, output_lang='ja', server='CN')

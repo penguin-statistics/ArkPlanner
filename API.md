@@ -36,16 +36,29 @@ Whether Battle Record (作战记录) is considered valuable. If True, requiremen
 *default: True*
 
 Whether LMD (龙门币) is considered valuable. If True, requirement of LMD is set to ```1e9```. If False, the value of Pure Gold is also considered 0. If input is an integer, the requirement of LMD is set to be euqal to the input.
-- ```exclude```: list(str)  **NEW**
+- ```exclude```: list(str)
 
  *default: []*
  
 Stages banned during calculation. Example: ```['1-7', 'SA-5']```
-- ```store```: *boolean*  **NEW**
+- ```store```: *boolean*
 
 *default: True*
 
 Whether to response green and yellow ticket values in stores.
+
+- ```input_lang```: *string* **NEW**
+- ```output_lang```: *string* **NEW**
+
+Languages of input and output data. Available Languages: ```['zh', 'en', 'ja', 'ko']```, and ```'id'``` for item ids. 
+Default value: ```input_lang = 'zh', output_lang = 'zh'```
+
+- ```server```: *string* **NEW**
+
+Using active stages from this server. Available Servers: ```['CN', 'US', 'JP', 'KR']```.
+Default value: ```server = 'CN'```
+
+
 ## Response Parameters
 - ```cost``` : *int*
 
@@ -91,7 +104,8 @@ value = {
 ```
 
 Item values.
-- ```green```: *dict* {item *(str)*: value *(float)* }  **NEW**
-- ```yellow```: *dict* {item *(str)*: value *(float)* }  **NEW**
+- ```green```: *dict* {item *(str)*: value *(float)* }
+- ```yellow```: *dict* {item *(str)*: value *(float)* }
 
 Value of one piece of green/yellow ticket when buying target items in the store.
+
