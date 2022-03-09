@@ -30,4 +30,3 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ghcr.io
           tags: "latest,${{ env.GIT_TAG }}"
-          buildargs: VERSION
