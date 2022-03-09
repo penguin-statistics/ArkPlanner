@@ -1,7 +1,5 @@
 FROM python:3.10.2-slim-bullseye
 
-RUN rm -rf ArkPlannerWeb
-
 COPY . .
 
 RUN apt-get update && apt-get install -y \
