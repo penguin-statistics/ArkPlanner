@@ -4,6 +4,10 @@ RUN rm -rf ArkPlannerWeb
 
 COPY . .
 
+RUN apt-get update && apt-get install -y \
+    tini
+# Tini is now available at /usr/bin/tini
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8020
