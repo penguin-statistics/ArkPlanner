@@ -5,7 +5,7 @@ import click
 from sanic import Sanic, response
 from MaterialPlanning import MaterialPlanning
 
-app = Sanic()
+app = Sanic(name="ArkPlanner")
 
 mp = MaterialPlanning()
 mp.update()
