@@ -10,6 +10,10 @@ app = Sanic(name="ArkPlanner")
 mp = MaterialPlanning()
 mp.update()
 
+@app.route("/_health", methods=['GET'])
+async def health(request):
+    return response.json({"status": "ok"})
+
 @app.route("/plan", methods=['POST'])
 async def plan(request):
     try:
