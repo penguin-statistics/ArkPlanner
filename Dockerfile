@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8020
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD [ "python", "-m", "sanic", "server.app", "--host=0.0.0.0", "--port=8020", "--workers=4" ]
+CMD [ "python", "-m", "sanic", "server.app", "--host=0.0.0.0", "--port=8020", "--workers=2" ]
