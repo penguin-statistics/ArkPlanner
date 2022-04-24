@@ -7,9 +7,6 @@ from sanic_cors import CORS, cross_origin
 
 from MaterialPlanning import MaterialPlanning
 
-from cors import add_cors_headers
-from options import setup_options
-
 app = Sanic(name="ArkPlanner")
 CORS(app)
 
@@ -82,12 +79,6 @@ async def update_each_half_hour(app, loop):
 @click.option('--log', is_flag=True, default=False, help='Trigger Sanic request log(will slows server)')
 def start_server(host, port, workers, debug, log):
     app.run(host=host, port=port, workers=workers, debug=debug, access_log=log)
-
-# Add OPTIONS handlers to any route that is missing it
-app.register_listener(setup_options, "before_server_start")
-
-# Fill in CORS headers
-app.register_middleware(add_cors_headers, "response")
 
 if __name__ == '__main__':
     start_server()
