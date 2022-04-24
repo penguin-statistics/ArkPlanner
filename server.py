@@ -3,12 +3,22 @@ import asyncio
 
 import click
 from sanic import Sanic, response
+from sanic_cors import CORS, cross_origin
+
 from MaterialPlanning import MaterialPlanning
 
+from cors import add_cors_headers
+from options import setup_options
+
 app = Sanic(name="ArkPlanner")
+CORS(app)
 
 mp = MaterialPlanning()
 mp.update()
+
+@app.route("/", methods=['GET'])
+async def index(request):
+    return response.redirect("https://penguin-stats.io/planner")
 
 @app.route("/_health", methods=['GET'])
 async def health(request):
@@ -73,6 +83,11 @@ async def update_each_half_hour(app, loop):
 def start_server(host, port, workers, debug, log):
     app.run(host=host, port=port, workers=workers, debug=debug, access_log=log)
 
+# Add OPTIONS handlers to any route that is missing it
+app.register_listener(setup_options, "before_server_start")
+
+# Fill in CORS headers
+app.register_middleware(add_cors_headers, "response")
 
 if __name__ == '__main__':
     start_server()
