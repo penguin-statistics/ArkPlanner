@@ -3,11 +3,11 @@ from MaterialPlanning import *
 
 
 if __name__ == '__main__':
-    if '-fe' in sys.argv:
-        filter_stages = ['GT-{}'.format(i) for i in range(1,7)]
-    else:
-        filter_stages = []
-    mp = MaterialPlanning(filter_stages=filter_stages)
+    #if '-fe' in sys.argv:
+    #    filter_stages = ['GT-{}'.format(i) for i in range(1,7)]
+    #else:
+    #    filter_stages = []
+    mp = MaterialPlanning(update=False)
 
     with codecs.open('required.txt', 'r', 'utf-8') as f:
         required_dct = {}
