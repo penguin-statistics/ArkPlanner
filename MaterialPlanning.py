@@ -510,11 +510,11 @@ class MaterialPlanning(object):
         self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
         self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
         
-        self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
-        self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
-        self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
-        self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
-        self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
+        #self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
+        #self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
+        #self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
+        #self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
+        #self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
 
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
