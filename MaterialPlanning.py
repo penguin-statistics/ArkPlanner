@@ -40,7 +40,6 @@ class MaterialPlanning(object):
         self.banned_stages = banned_stages # for debugging
         self.display_main_only = display_main_only
         self.ConvertionDR = 0.18 # send actual convertion_dr in get_plan
-        self.complete_stage_list = []
 
         self.update(force=update,
                     filter_freq=filter_freq,
@@ -100,23 +99,29 @@ class MaterialPlanning(object):
                 stage_array.append(drop['stageId'])
         stage_dct_rv = {v: k for k, v in enumerate(stage_array)}
         servers = ['CN', 'US', 'JP', 'KR']
+        # CN have to be the first one, which contain all possible stages
         languages = ['zh', 'en', 'ja', 'ko']
 
         valid_stages = {server: [False]*len(stage_array) for server in servers}
         stage_code = {server: ['' for _ in stage_array] for server in servers}
+        complete_stage_list = {server: [] for server in servers}
+        stage_update_list = {server: [] for server in servers}
         stages = {}
         stage_name_rv = {lang: {} for lang in languages}
         stage_id_to_name = {}
         for server in servers:
             try:
                 stages[server] = get_json(f'stages?server={server}')
+                stages[server] = [stage for stage in stages[server] if stage['existence'][server]['exist']]
             except Exception as e:
                 print(f'Failed to load server {server}, Error: {e}')
                 return -1
             for stage in stages[server]:
-                if stage['code'] not in self.complete_stage_list:
-                    self.complete_stage_list.append(stage['code'])
+                if stage['code'] not in complete_stage_list[server]:
+                    complete_stage_list[server].append(stage['code'])
                 if stage['stageId'] not in stage_dct_rv or 'dropInfos' not in stage:
+                    if stage['code'][:2] in ['SK', 'AP', 'CE', 'LS', 'PR']:
+                        stage_update_list[server].append(stage)
                     continue
                 valid_stages[server][stage_dct_rv[stage['stageId']]] = True
                 stage_code[server][stage_dct_rv[stage['stageId']]] = stage['code_i18n'][LanguageMap[server]]
@@ -135,6 +140,7 @@ class MaterialPlanning(object):
             print(f'Failed to load item list, Error: {e}')
             return -1
 
+        self.complete_stage_list = complete_stage_list
         self.stage_array = stage_array
         self.stage_dct_rv = stage_dct_rv
         self.stage_code = stage_code
@@ -149,7 +155,27 @@ class MaterialPlanning(object):
             for stage in stages[server]:
                 if stage['stageId'] in self.stage_dct_rv:
                     self.cost_lst[self.stage_dct_rv[stage['stageId']]] = stage['apCost']
-
+        
+        for server in servers:
+            #print([stage['code'] for stage in stage_update_list[server]])
+            for stage in stage_update_list[server]:
+                if stage['stageId'] not in self.stage_array:
+                    self.stage_array.append(stage['stageId'])
+                    self.stage_dct_rv.update({stage['stageId']: len(self.stage_array)-1})
+                    for a_server in servers:
+                        self.valid_stages[a_server].append(False)
+                        self.stage_code[a_server].append('')
+                    self.cost_lst = np.append(self.cost_lst, stage['apCost'])
+                self.valid_stages[server][stage_dct_rv[stage['stageId']]] = True
+                self.stage_code[server][stage_dct_rv[stage['stageId']]] = stage['code_i18n'][LanguageMap[server]]
+                for lang in languages:
+                    stagecode = stage['code_i18n'][lang]
+                    if stagecode not in stage_name_rv[lang]:
+                        self.stage_name_rv[lang][stagecode] = []
+                    self.stage_name_rv[lang][stagecode].append(stage_dct_rv[stage['stageId']])
+                self.stage_id_to_name[stage['stageId']] = {lang: stage['code_i18n'][lang] for lang in languages}
+                self.stage_id_to_name[stage['stageId']]["id"] = stage['stageId']
+        
         self.stage_array = np.array(self.stage_array)
         self.probs_matrix = np.zeros([len(self.stage_array), len(self.item_array)])
 
@@ -163,7 +189,6 @@ class MaterialPlanning(object):
         for k, stage in enumerate(self.stage_array):
             self.probs_matrix[k, self.item_name_rv['龙门币']] = self.cost_lst[k]*12
         self.update_droprate()
-
 
         # To build equivalence relationship from convert_rule_dct.
         self.update_convertion()
@@ -509,6 +534,10 @@ class MaterialPlanning(object):
         self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
         self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
         self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
+        self.update_droprate_processing('CE-6', '龙门币', 10000, 'update')
+        
+        self.update_droprate_processing('LS-6', '高级作战记录', 4, 'update')
+        self.update_droprate_processing('LS-6', '中级作战记录', 2, 'update')
         
         #self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
         #self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
@@ -548,6 +577,10 @@ class MaterialPlanning(object):
             print(f'stage {stage_name} already included')
         self.stage_array.append(code)
         self.stage_dct_rv.update({code: len(self.stage_array)-1})
+        if stage_name not in self.stage_name_rv['zh']:
+            self.stage_name_rv['zh'][stage_name] = []
+        self.stage_name_rv['zh'][stage_name].append(len(self.stage_array)-1)
+        
         self.cost_lst = np.append(self.cost_lst, cost)
         servers = ['CN', 'US', 'JP', 'KR']
         for server in servers:
@@ -557,7 +590,7 @@ class MaterialPlanning(object):
     def update_droprate_processing(self, stage, item, droprate, mode='add'):
         # update droprate for all stages that has code $stage
         if stage not in self.stage_name_rv['zh']:
-            if stage not in self.complete_stage_list:
+            if stage not in self.complete_stage_list['CN']:
                 print(f'stage {stage} not found')
             return
         if item not in self.item_name_rv:
