@@ -88,7 +88,7 @@ _Note: 如何打开命令行？Windows 下可从 Anaconda 或 Win+R 开启运行
   固源岩(3) <=== 源岩(9)
   ```
 
-- 由于数据中记录较少的副本掉落偏差较大，因此代码中默认过滤掉统计频次低于 20 的记录，如需修改，可在 _main.py_ 中将第 6 行改为
+- 由于数据中记录较少的副本掉落偏差较大，因此代码中默认过滤掉统计频次低于 200 的记录，如需修改，可在 _main.py_ 中将第 6 行改为
 
   My code filters the records by their frequency from Penguin-Stats since records with low frequency may cause bias. To customize your filter, replace line 6 in _main.py_ with
 
