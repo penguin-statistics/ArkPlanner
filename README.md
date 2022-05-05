@@ -1,19 +1,26 @@
-> This repo is forked from https://github.com/ycremar/ArkPlanner.
-> This fork is for docker-ify the Planner service to allow a more easier way to deploy such service.
+<img src="https://penguin.upyun.galvincdn.com/logos/penguin_stats_logo.png"
+     alt="Penguin Statistics - Logo"
+     width="96px" />
 
-# ArkPlanner
+# Penguin Statistics - ArkPlanner
 
-[Web App](https://planner.penguin-stats.io/) at Penguin-Stat is available now. Current front-end is built from [this repo](https://github.com/ycremar/ArkPlanner-FrontEnd). The front-end is based on the [vanilla version](https://ak.inva.land/) implemented by [@invisiblearts](https://github.com/invisiblearts).
+> :love: This project is not possible without initial founders [@ycremar](https://github.com/ycremar) and [@SQRPI](https://github.com/SQRPI). They both contributed to this project to make it possible.
 
-明日方舟最优刷图策略规划工具，基于开源的掉落统计数据、素材合成规则以及线性规划实现。由于混合掉落、额外掉落副本的存在且各种材料掉落概率不同，在材料需求较复杂时，要刷哪些副本并不直观，大多情况下需要通过比较复杂的计算得到最优解。同时，了解刷所需材料预计消耗多少体力也会帮助你更好的规划体力。原理：将素材合成也看作一种掉落在约束中加以考虑（目标材料掉落 1，消耗的材料掉落为-1），其 cost 为 0 或合成所需代币的等价体力消耗。
+[Web App](https://penguin-stats.io/planner) is now available at Penguin Statistics.
 
-ArkPlanner is a tiny python tool for the mobile game Arknight. The variety of items dropping at different stages and the complicate synthesize system make it difficult to make the most efficient plan to obtain items. ArkPlanner helps you to make the optimal plan for any given combinations of the required item based on open-sourced stats data and items synthesize rules, and linear programming algorithms.
+> The previous web app have been replaced with the integrated [Planner](https://penguin-stats.io/planner) in Penguin Statistics to further integrate the experience. The previous frontend app is built from [ycremar/ArkPlanner-FrontEnd](https://github.com/ycremar/ArkPlanner-FrontEnd) and is based on the initial [vanilla version](https://ak.inva.land/) implemented by [@invisiblearts](https://github.com/invisiblearts).
+
+明日方舟最优刷图策略规划工具，基于开源的掉落统计数据、素材合成规则以及线性规划实现。由于混合掉落、额外掉落副本的存在且各种材料掉落概率不同，在材料需求较复杂时，要刷哪些副本并不直观，大多情况下需要通过比较复杂的计算得到最优解。同时，了解刷所需材料预计消耗多少体力也会帮助你更好的规划体力。原理：将素材合成也看作一种掉落在约束中加以考虑（目标材料掉落 1，消耗的材料掉落为 -1），其 cost 为 0 或合成所需代币的等价体力消耗。
+
+ArkPlanner is a tiny python tool for the mobile game Arknights. The variety of items dropping at different stages and the complicate synthesize system make it difficult to make the most efficient plan to obtain items. ArkPlanner helps you to make the optimal plan for any given combinations of the required item based on open-sourced stats data and items synthesize rules, and linear programming algorithms.
 
 _Note: the linear programming is based on the items dropping expectations estimated by the existing samples. Due to the randomness, divergence may occur especially when you require a small number of items._
 
-### Planner API
+## Use ArkPlanner via HTTP API - 通过 HTTP API 调用 ArkPlanner
 
-[API ReadMe](https://github.com/ycremar/ArkPlanner/blob/master/API.md)
+[API ReadMe](https://github.com/penguin-statistics/ArkPlanner/blob/master/API.md)
+
+## Use ArkPlanner via Command Line - 通过命令行调用 ArkPlanner
 
 ### 安装说明 - Installation
 
@@ -125,7 +132,7 @@ If new items or stages are updated, delete the data folder and run the following
     python main.py
     ```
 
-### 鸣谢 - Acknowledgement
+## 鸣谢 - Acknowledgement
 
 ---
 
