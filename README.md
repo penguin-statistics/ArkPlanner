@@ -4,7 +4,9 @@
 
 # Penguin Statistics - ArkPlanner
 
-> :heart: This project is not possible without initial founders [@ycremar](https://github.com/ycremar) and [@SQRPI](https://github.com/SQRPI). They both contributed to this project to make it possible.
+> :heart: ArkPlanner is not possible without any of the initial founders, [@ycremar](https://github.com/ycremar) and [@SQRPI](https://github.com/SQRPI). They both contributed a whole lot to this project to make ArkPlanner eventually possible.
+>
+> This repository previously was a fork of the original ycremar/ArkPlanner repository, but later @ycremar decided to transfer the ownership to Penguin Statistics.
 
 [Web App](https://penguin-stats.io/planner) is now available at Penguin Statistics.
 
