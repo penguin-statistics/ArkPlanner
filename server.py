@@ -3,18 +3,23 @@ import asyncio
 
 import click
 from sanic import Sanic, response
+from sanic_cors import CORS, cross_origin
+
 from MaterialPlanning import MaterialPlanning
 
-app = Sanic()
-
-app.static('/', './ArkPlannerWeb/index.html')
-app.static('/css', './ArkPlannerWeb/css')
-app.static('/fonts', './ArkPlannerWeb/fonts')
-app.static('/img', './ArkPlannerWeb/img')
-app.static('/js', './ArkPlannerWeb/js')
+app = Sanic(name="ArkPlanner")
+CORS(app)
 
 mp = MaterialPlanning()
 mp.update()
+
+@app.route("/", methods=['GET'])
+async def index(request):
+    return response.redirect("https://penguin-stats.io/planner")
+
+@app.route("/_health", methods=['GET'])
+async def health(request):
+    return response.json({"status": "ok"})
 
 @app.route("/plan", methods=['POST'])
 async def plan(request):
@@ -74,7 +79,6 @@ async def update_each_half_hour(app, loop):
 @click.option('--log', is_flag=True, default=False, help='Trigger Sanic request log(will slows server)')
 def start_server(host, port, workers, debug, log):
     app.run(host=host, port=port, workers=workers, debug=debug, access_log=log)
-
 
 if __name__ == '__main__':
     start_server()

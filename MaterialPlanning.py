@@ -25,7 +25,7 @@ class MaterialPlanning(object):
                  update=False,
                  banned_stages={},
 #                 expValue=30,
-                 ConvertionDR=0.18,
+#                 ConvertionDR=0.18,
                  display_main_only=True):
         """
         Object initialization.
@@ -39,9 +39,15 @@ class MaterialPlanning(object):
         """
         self.banned_stages = banned_stages # for debugging
         self.display_main_only = display_main_only
-        self.ConvertionDR = ConvertionDR
+        self.ConvertionDR = 0.18 # send actual convertion_dr in get_plan
 
-        self.update(force=update)
+        self.update(force=update,
+                    filter_freq=filter_freq,
+                    filter_stages=filter_stages,
+                    url_stats=url_stats,
+                    url_rules=url_rules,
+                    path_stats=path_stats,
+                    path_rules=path_rules)
 
     def get_item_id(self):
         items = get_json('items')
@@ -93,35 +99,48 @@ class MaterialPlanning(object):
                 stage_array.append(drop['stageId'])
         stage_dct_rv = {v: k for k, v in enumerate(stage_array)}
         servers = ['CN', 'US', 'JP', 'KR']
+        # CN have to be the first one, which contain all possible stages
         languages = ['zh', 'en', 'ja', 'ko']
 
         valid_stages = {server: [False]*len(stage_array) for server in servers}
         stage_code = {server: ['' for _ in stage_array] for server in servers}
+        complete_stage_list = {server: [] for server in servers}
+        stage_update_list = {server: [] for server in servers}
         stages = {}
         stage_name_rv = {lang: {} for lang in languages}
         stage_id_to_name = {}
         for server in servers:
             try:
                 stages[server] = get_json(f'stages?server={server}')
+                stages[server] = [stage for stage in stages[server] if stage['existence'][server]['exist']]
             except Exception as e:
                 print(f'Failed to load server {server}, Error: {e}')
                 return -1
             for stage in stages[server]:
+                if stage['code'] not in complete_stage_list[server]:
+                    complete_stage_list[server].append(stage['code'])
                 if stage['stageId'] not in stage_dct_rv or 'dropInfos' not in stage:
+                    if stage['code'][:2] in ['SK', 'AP', 'CE', 'LS', 'PR']:
+                        stage_update_list[server].append(stage)
                     continue
                 valid_stages[server][stage_dct_rv[stage['stageId']]] = True
-                stage_code[server][stage_dct_rv[stage['stageId']]] =  stage['code_i18n'][LanguageMap[server]]
-                for lang in languages: stage_name_rv[lang][stage['code_i18n'][lang]] = stage_dct_rv[stage['stageId']]
+                stage_code[server][stage_dct_rv[stage['stageId']]] = stage['code_i18n'][LanguageMap[server]]
+                for lang in languages:
+                    stagecode = stage['code_i18n'][lang]
+                    if stagecode not in stage_name_rv[lang]:
+                        stage_name_rv[lang][stagecode] = []
+                    stage_name_rv[lang][stagecode].append(stage_dct_rv[stage['stageId']])
                 stage_id_to_name[stage['stageId']] = {lang: stage['code_i18n'][lang] for lang in languages}
                 # Fix KeyError('id')
                 stage_id_to_name[stage['stageId']]["id"] = stage['stageId']
-                
+        
         try:
             self.get_item_id()
         except Exception as e:
             print(f'Failed to load item list, Error: {e}')
             return -1
 
+        self.complete_stage_list = complete_stage_list
         self.stage_array = stage_array
         self.stage_dct_rv = stage_dct_rv
         self.stage_code = stage_code
@@ -136,8 +155,27 @@ class MaterialPlanning(object):
             for stage in stages[server]:
                 if stage['stageId'] in self.stage_dct_rv:
                     self.cost_lst[self.stage_dct_rv[stage['stageId']]] = stage['apCost']
-
-        self.update_stage()
+        
+        for server in servers:
+            #print([stage['code'] for stage in stage_update_list[server]])
+            for stage in stage_update_list[server]:
+                if stage['stageId'] not in self.stage_array:
+                    self.stage_array.append(stage['stageId'])
+                    self.stage_dct_rv.update({stage['stageId']: len(self.stage_array)-1})
+                    for a_server in servers:
+                        self.valid_stages[a_server].append(False)
+                        self.stage_code[a_server].append('')
+                    self.cost_lst = np.append(self.cost_lst, stage['apCost'])
+                self.valid_stages[server][stage_dct_rv[stage['stageId']]] = True
+                self.stage_code[server][stage_dct_rv[stage['stageId']]] = stage['code_i18n'][LanguageMap[server]]
+                for lang in languages:
+                    stagecode = stage['code_i18n'][lang]
+                    if stagecode not in stage_name_rv[lang]:
+                        self.stage_name_rv[lang][stagecode] = []
+                    self.stage_name_rv[lang][stagecode].append(stage_dct_rv[stage['stageId']])
+                self.stage_id_to_name[stage['stageId']] = {lang: stage['code_i18n'][lang] for lang in languages}
+                self.stage_id_to_name[stage['stageId']]["id"] = stage['stageId']
+        
         self.stage_array = np.array(self.stage_array)
         self.probs_matrix = np.zeros([len(self.stage_array), len(self.item_array)])
 
@@ -147,13 +185,12 @@ class MaterialPlanning(object):
             except:
                 print(f'Failed to parse {drop}. (出现此条请带报错信息联系根派)')
 
-        # 添加LS, CE, S4-6, S5-2等的掉落 及 默认龙门币掉落
+        # 添加所有关卡的龙门币掉落
         for k, stage in enumerate(self.stage_array):
             self.probs_matrix[k, self.item_name_rv['龙门币']] = self.cost_lst[k]*12
         self.update_droprate()
 
-
-        # To build equavalence relationship from convert_rule_dct.
+        # To build equivalence relationship from convert_rule_dct.
         self.update_convertion()
         self.convertions_dct = {}
         convertion_matrix = []
@@ -176,7 +213,8 @@ class MaterialPlanning(object):
             for iname in outc_dct:
                 convertion[self.item_name_rv[iname]] += outc_dct[iname]*self.ConvertionDR*outc_wgh[iname]/weight_sum
             convertion_outc_matrix.append(convertion)
-            convertion_cost_lst.append(0)
+            convertion_cost_lst.append(1e-8 * rule['goldCost'])
+            # a small factor, since here we do not know whether we demand gold or not
 
         self.convertion_matrix = np.array(convertion_matrix)
         self.convertion_outc_matrix = np.array(convertion_outc_matrix)
@@ -403,6 +441,7 @@ class MaterialPlanning(object):
                 items = {self.item_id_to_name[self.item_array[idx]][output_lang]: float2str(probs_matrix[i, idx]*t)
                             for idx in target_items if len(self.item_array[idx])==5 and self.item_array[idx] != 'furni'}
                 stage = {
+                    "stageId": stage_array[i],
                     "stage": self.stage_id_to_name[stage_array[i]][output_lang],
                     "count": float2str(t),
                     "items": items
@@ -448,7 +487,7 @@ class MaterialPlanning(object):
             print('Loot at following stages:')
             for stage in stages:
                 display_lst = [k + '(%s) '%stage['items'][k] for k in stage['items']]
-                print('Stage ' + self.stage_code[server][self.stage_name_rv[output_lang][stage['stage']]]
+                print('Stage ' + self.stage_code[server][self.stage_dct_rv[stage['stageId']]]
                       + '(%s times) ===> '%stage['count'] + ', '.join(display_lst))
 
             print('\nSynthesize following items:')
@@ -468,19 +507,43 @@ class MaterialPlanning(object):
         return self.stage_code['CN'][self.stage_dct_rv[stage_name]][:2] in ['LS', 'CE']
 
     def update_droprate(self):
-        self.update_droprate_processing('S4-6', '龙门币', 3228)
-        self.update_droprate_processing('S5-2', '龙门币', 2484)
+        self.update_droprate_processing('1-1', '龙门币', 660, 'update')
+        self.update_droprate_processing('2-7', '龙门币', 1500, 'update')
+        self.update_droprate_processing('3-6', '龙门币', 2040, 'update')
+        self.update_droprate_processing('4-1', '龙门币', 2700, 'update')
+        self.update_droprate_processing('6-1', '龙门币', 1216, 'update')
+        self.update_droprate_processing('7-3', '龙门币', 1216, 'update')
+        self.update_droprate_processing('R8-1', '龙门币', 2700, 'update')
+        self.update_droprate_processing('R8-4', '龙门币', 1216, 'update')
+        self.update_droprate_processing('9-2', '龙门币', 2700, 'update')
+        self.update_droprate_processing('9-3', '龙门币', 1216, 'update')
+        self.update_droprate_processing('10-8', '龙门币', 3480, 'update')
+        
+        self.update_droprate_processing('S2-2', '龙门币', 1020, 'update')
+        self.update_droprate_processing('S4-6', '龙门币', 3480, 'update')
+        self.update_droprate_processing('S5-2', '龙门币', 2700, 'update')
+        self.update_droprate_processing('S5-3', '龙门币', 1216, 'update')
+        self.update_droprate_processing('S5-5', '龙门币', 1216, 'update')
+        self.update_droprate_processing('S6-2', '龙门币', 1216, 'update')
         self.update_droprate_processing('S6-4', '龙门币', 2700, 'update')
+        self.update_droprate_processing('S7-1', '龙门币', 2700, 'update')
+        self.update_droprate_processing('S7-2', '龙门币', 1216, 'update')
+        
         self.update_droprate_processing('CE-1', '龙门币', 1700, 'update')
         self.update_droprate_processing('CE-2', '龙门币', 2800, 'update')
         self.update_droprate_processing('CE-3', '龙门币', 4100, 'update')
         self.update_droprate_processing('CE-4', '龙门币', 5700, 'update')
         self.update_droprate_processing('CE-5', '龙门币', 7500, 'update')
-        self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
-        self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
-        self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
-        self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
-        self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
+        self.update_droprate_processing('CE-6', '龙门币', 10000, 'update')
+        
+        self.update_droprate_processing('LS-6', '高级作战记录', 4, 'update')
+        self.update_droprate_processing('LS-6', '中级作战记录', 2, 'update')
+        
+        #self.update_droprate_processing('LS-1', '作战记录', 1600, 'update')
+        #self.update_droprate_processing('LS-2', '作战记录', 2800, 'update')
+        #self.update_droprate_processing('LS-3', '作战记录', 3900, 'update')
+        #self.update_droprate_processing('LS-4', '作战记录', 5900, 'update')
+        #self.update_droprate_processing('LS-5', '作战记录', 7400, 'update')
 
     def update_convertion_processing(self, target_item: tuple, cost: int, source_item: dict, extraOutcome: dict):
         '''
@@ -504,26 +567,20 @@ class MaterialPlanning(object):
         self.update_convertion_processing(('作战记录', 200), 0, {'基础作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('作战记录', 400), 0, {'初级作战记录': 1}, ({}, 0, 1))
         self.update_convertion_processing(('作战记录', 1000), 0, {'中级作战记录': 1}, ({}, 0, 1))
-        self.update_convertion_processing(('作战记录', 1000), 0, {'高级作战记录': 1}, ({}, 0, 1))
+        self.update_convertion_processing(('作战记录', 2000), 0, {'高级作战记录': 1}, ({}, 0, 1))
         # 这里一定保证这一条在最后!
         # ENSURE THIS LINE IS THE LAST LINE!
         self.update_convertion_processing(('作战记录', 400), 0, {'赤金': 1}, ({}, 0, 1))
 
-    def update_stage(self):
-        self.update_stage_processing('LS-1', 10, 'wk_kc_1')
-        self.update_stage_processing('LS-2', 15, 'wk_kc_2')
-        self.update_stage_processing('LS-3', 20, 'wk_kc_3')
-        self.update_stage_processing('LS-4', 25, 'wk_kc_4')
-        self.update_stage_processing('LS-5', 30, 'wk_kc_5')
-        self.update_stage_processing('CE-1', 10, 'wk_melee_1')
-        self.update_stage_processing('CE-2', 15, 'wk_melee_2')
-        self.update_stage_processing('CE-3', 20, 'wk_melee_3')
-        self.update_stage_processing('CE-4', 25, 'wk_melee_4')
-        self.update_stage_processing('CE-5', 30, 'wk_melee_5')
-
     def update_stage_processing(self, stage_name: str, cost: int, code: str) -> None:
+        if code in self.stage_array:
+            print(f'stage {stage_name} already included')
         self.stage_array.append(code)
         self.stage_dct_rv.update({code: len(self.stage_array)-1})
+        if stage_name not in self.stage_name_rv['zh']:
+            self.stage_name_rv['zh'][stage_name] = []
+        self.stage_name_rv['zh'][stage_name].append(len(self.stage_array)-1)
+        
         self.cost_lst = np.append(self.cost_lst, cost)
         servers = ['CN', 'US', 'JP', 'KR']
         for server in servers:
@@ -531,18 +588,20 @@ class MaterialPlanning(object):
             self.valid_stages[server].append(True)
 
     def update_droprate_processing(self, stage, item, droprate, mode='add'):
+        # update droprate for all stages that has code $stage
         if stage not in self.stage_name_rv['zh']:
-            print(f'stage {stage} not found')
+            if stage not in self.complete_stage_list['CN']:
+                print(f'stage {stage} not found')
             return
         if item not in self.item_name_rv:
             print(f'item {item} not found')
             return
-        stageid = self.stage_name_rv['zh'][stage]
-        itemid = self.item_name_rv[item]
-        if mode == 'add':
-            self.probs_matrix[stageid][itemid] += droprate
-        elif mode == 'update':
-            self.probs_matrix[stageid][itemid] = droprate
+        for stageid in self.stage_name_rv['zh'][stage]:
+            itemid = self.item_name_rv[item]
+            if mode == 'add':
+                self.probs_matrix[stageid][itemid] += droprate
+            elif mode == 'update':
+                self.probs_matrix[stageid][itemid] = droprate
 
 
 def get_json(s):
