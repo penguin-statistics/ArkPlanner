@@ -26,8 +26,6 @@ _Note: the linear programming is based on the items dropping expectations estima
 
 ### 安装说明 - Installation
 
----
-
 **_1. 环境配置 - Environment requirements_**
 
 需要安装 Python 3.5 以上版本。Web 服务器则需要 3.6 以上。Windows 系统可通过[此链接](https://www.anaconda.com/distribution/)安装 Anaconda。强烈推荐使用 Jupyter notebook，详情请百度。
@@ -135,8 +133,6 @@ If new items or stages are updated, delete the data folder and run the following
     ```
 
 ## 鸣谢 - Acknowledgement
-
----
 
 数据来源：
 
