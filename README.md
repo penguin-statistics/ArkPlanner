@@ -139,3 +139,9 @@ If new items or stages are updated, delete the data folder and run the following
 - 明日方舟企鹅物流数据统计 [penguin-stats.io](https://penguin-stats.io/)
 
 - 明日方舟工具箱 [ak.graueneko.xyz](https://ak.graueneko.xyz/)
+
+## 贡献者 - Contributors
+
+本项目由以下贡献者完成。我们欢迎任何贡献者 Pull Request！
+
+[![Contributors](https://contrib.rocks/image?repo=penguin-statistics/ArkPlanner)](https://github.com/penguin-statistics/ArkPlanner/graphs/contributors)
