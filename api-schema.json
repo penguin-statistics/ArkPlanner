@@ -1,0 +1,209 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://github.com/ycremar/ArkPlanner/raw/master/api-schema.json",
+    "type": "object",
+    "title": "ArkPlanner Config",
+    "description": "The config that describes an ArkPlanner plan request.",
+    "default": {},
+    "examples": [
+        {
+            "owned": {
+                "全新装置": 1
+            },
+            "required": {
+                "全新装置": 4
+            },
+            "input_lang": "zh",
+            "output_lang": "zh",
+            "server": "US",
+            "store": true,
+            "convertion_dr": 0.18,
+            "extra_outc": false,
+            "exp_demand": true,
+            "gold_demand": true,
+            "exclude": [
+                "1-7",
+                "SA-5"
+            ]
+        },
+        {
+            "owned": {
+              "中級アケトン": 7
+            },
+            "required": {
+              "中級アケトン": 29
+            },
+            "input_lang": "ja",
+            "output_lang": "ko",
+            "server": "JP",
+            "store": true,
+            "convertion_dr": 0.2,
+            "extra_outc": true,
+            "exp_demand": 50000,
+            "gold_demand": 250000,
+            "exclude": ["1-7"]
+        }
+    ],
+    "required": [],
+    "additionalProperties": false,
+    "properties": {
+        "owned": {
+            "$id": "#/properties/owned",
+            "type": "object",
+            "title": "Owned Items",
+            "description": "A dict of items owned, where keys are item names, i.e. 'D32钢', values are numbers of items owned.",
+            "default": {},
+            "examples": [
+                {
+                    "全新装置": 1
+                }
+            ],
+            "required": [],
+            "properties": {},
+            "additionalProperties": { "type": "integer" },
+            "patternProperties": {
+                "": {
+                    "type": "integer"
+                }
+            }
+        },
+        "required": {
+            "$id": "#/properties/required",
+            "type": "object",
+            "title": "Required Items",
+            "description": "A dict of items required, where keys are item names, i.e. 'D32钢', values are numbers of items required.",
+            "default": {},
+            "examples": [
+                {
+                    "全新装置": 4
+                }
+            ],
+            "required": [],
+            "properties": {},
+            "additionalProperties": { "type": "integer" },
+            "patternProperties": {
+                "": {
+                    "type": "integer"
+                }
+            }
+        },
+        "input_lang": {
+            "$id": "#/properties/input_lang",
+            "type": "string",
+            "title": "Input Language",
+            "description": "Language of the input data.",
+            "enum": ["zh", "en", "ja", "ko", "id"],
+            "default": "zh",
+            "examples": [
+                "zh"
+            ]
+        },
+        "output_lang": {
+            "$id": "#/properties/output_lang",
+            "type": "string",
+            "title": "Output Language",
+            "description": "Language of the output data.",
+            "enum": ["zh", "en", "ja", "ko", "id"],
+            "default": "zh",
+            "examples": [
+                "zh"
+            ]
+        },
+        "server": {
+            "$id": "#/properties/server",
+            "type": "string",
+            "title": "Server",
+            "description": "Only plan the active stages from this server. ",
+            "default": "CN",
+            "enum": ["CN", "US", "JP", "KR"],
+            "examples": [
+                "CN"
+            ]
+        },
+        "store": {
+            "$id": "#/properties/store",
+            "type": "boolean",
+            "title": "Store",
+            "description": "Whether to response green and yellow ticket values in stores.",
+            "default": false,
+            "examples": [
+                false
+            ]
+        },
+        "convertion_dr": {
+            "$id": "#/properties/convertion_dr",
+            "type": "number",
+            "title": "Convertion Drop Rate",
+            "description": "The drop rate of extra outcome.",
+            "default": 0.18,
+            "examples": [
+                0.18
+            ]
+        },
+        "extra_outc": {
+            "$id": "#/properties/extra_outc",
+            "type": "boolean",
+            "title": "Consider Extra Outcome",
+            "description": "Whether extra outcome of convertion is considered.",
+            "default": true,
+            "examples": [
+                true
+            ]
+        },
+        "exp_demand": {
+            "$id": "#/properties/exp_demand",
+            "type": ["boolean", "integer"],
+            "title": "Consider Battle Record",
+            "description": "Whether Battle Record is considered valuable. If True, requirement of Battle Record is set to 1e9. If input is an integer, the requirement of experiment is set to be euqal to the input.",
+            "default": false,
+            "examples": [
+                false,
+                100
+            ]
+        },
+        "gold_demand": {
+            "$id": "#/properties/gold_demand",
+            "type": ["boolean", "integer"],
+            "title": "Consider LMD",
+            "description": "Whether LMD is considered valuable. If True, requirement of LMD is set to 1e9. If False, the value of Pure Gold is also considered 0.",
+            "default": false,
+            "examples": [
+                false,
+                100
+            ]
+        },
+        "exclude": {
+            "$id": "#/properties/exclude",
+            "type": "array",
+            "title": "Exclude Stages",
+            "description": "Stages banned during calculation, in addition to the inactive/non-existing stages from the server specified.",
+            "default": [],
+            "examples": [
+                [
+                    "1-7",
+                    "SA-5"
+                ],
+                [
+                    "罗德岛物资补给"
+                ]
+            ],
+            "additionalItems": true,
+            "items": {
+                "anyOf": [
+                    {
+                        "$id": "#/properties/exclude/items/anyOf/0",
+                        "type": "string",
+                        "title": "Stage Code",
+                        "description": "The stage code.",
+                        "default": "",
+                        "examples": [
+                            "1-7",
+                            "SA-5"
+                        ]
+                    }
+                ],
+                "$id": "#/properties/exclude/items"
+            }
+        }
+    }
+}
