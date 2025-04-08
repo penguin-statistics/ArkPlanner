@@ -143,6 +143,9 @@ class MaterialPlanning(object):
 
         for drop in material_probs['matrix']:
             try:
+                end = drop.get('end', None)
+                if end is not None and round(time.time()*1000) >= end:
+                    continue
                 self.probs_matrix[self.stage_dct_rv[drop['stageId']], self.item_dct_rv[drop['itemId']]] = drop['quantity']/float(drop['times'])
             except:
                 print(f'Failed to parse {drop}. (出现此条请带报错信息联系根派)')
