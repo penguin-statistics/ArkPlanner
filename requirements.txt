@@ -1,5 +1,5 @@
 numpy>=1.18.1
-sanic==22.3.1
+sanic==22.9
 Sanic-Cors==2.0.1
 scipy>=1.4.1
 Click>=7.0
