@@ -1,0 +1,32 @@
+name: Build Docker Image
+
+on:
+  push:
+    # trigger on any tag push
+    tags:
+      - "**"
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Tag Version
+        id: get_version
+        run: |
+          export TRUNCATED_GITHUB_SHA=$(echo ${{ github.sha }} | cut -c1-7);
+          echo "VERSION=${GITHUB_REF/refs\/tags\//}+${TRUNCATED_GITHUB_SHA}" >> $GITHUB_ENV
+          echo "GIT_TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+
+      - name: Build and Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@3.04
+        with:
+          name: penguin-statistics/planner-backend
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          tags: "latest,${{ env.GIT_TAG }}"

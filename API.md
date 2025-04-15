@@ -43,7 +43,7 @@ Whether LMD (龙门币) is considered valuable. If True, requirement of LMD is s
 Stages banned during calculation. Example: ```['1-7', 'SA-5']```
 - ```store```: *boolean*
 
-*default: True*
+*default: False*
 
 Whether to response green and yellow ticket values in stores.
 
