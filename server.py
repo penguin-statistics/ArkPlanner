@@ -2,9 +2,12 @@ import asyncio
 
 import click
 from sanic import Sanic, response
+from sanic_ext import Extend
 from MaterialPlanning import MaterialPlanning
 
 app = Sanic('ArkPlanner')
+app.config.CORS_ORIGINS = '*'
+Extend(app)
 
 app.static('/', './ArkPlannerWeb/index.html', name='web_index')
 app.static('/css', './ArkPlannerWeb/css', name='css')
