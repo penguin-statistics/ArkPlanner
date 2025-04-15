@@ -1,27 +1,30 @@
-import time
 import asyncio
 
 import click
 from sanic import Sanic, response
 from sanic_cors import CORS, cross_origin
 
-from MaterialPlanning import MaterialPlanning
+app = Sanic('ArkPlanner')
 
-app = Sanic(name="ArkPlanner")
-CORS(app)
+app.static('/', './ArkPlannerWeb/index.html', name='web_index')
+app.static('/css', './ArkPlannerWeb/css', name='css')
+app.static('/fonts', './ArkPlannerWeb/fonts', name='fonts')
+app.static('/img', './ArkPlannerWeb/img', name='img')
+app.static('/js', './ArkPlannerWeb/js', name='js')
 
-mp = MaterialPlanning()
-mp.update()
+@app.before_server_start
+async def init_mp(app):
+    app.ctx.mp = MaterialPlanning()
 
-@app.route("/", methods=['GET'])
+@app.get('/', name='index')
 async def index(request):
     return response.redirect("https://penguin-stats.io/planner")
 
-@app.route("/_health", methods=['GET'])
+@app.get('/_health', name='_health')
 async def health(request):
     return response.json({"status": "ok"})
 
-@app.route("/plan", methods=['POST'])
+@app.post('/plan', name='plan')
 async def plan(request):
     try:
         input_data = request.json
@@ -45,7 +48,7 @@ async def plan(request):
     server = input_data.get('server', 'CN')
 
     try:
-        dct = mp.get_plan(
+        dct = app.ctx.mp.get_plan(
             required_dct, owned_dct, False,
             outcome=extra_outc,
             exp_demand=exp_demand,
@@ -64,10 +67,10 @@ async def plan(request):
     return response.json(dct)
 
 
-@app.listener('after_server_start')
+@app.after_server_start
 async def update_each_half_hour(app, loop):
     while True:
-        mp.update()
+        app.ctx.mp.update()
         await asyncio.sleep(30 * 60)
 
 
