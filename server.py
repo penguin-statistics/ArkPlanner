@@ -1,4 +1,5 @@
 import asyncio
+import threading
 
 import click
 from sanic import Sanic, response
@@ -14,6 +15,19 @@ app.static('/css', './ArkPlannerWeb/css', name='css')
 app.static('/fonts', './ArkPlannerWeb/fonts', name='fonts')
 app.static('/img', './ArkPlannerWeb/img', name='img')
 app.static('/js', './ArkPlannerWeb/js', name='js')
+
+# Planning is CPU-bound and MaterialPlanning.update() does blocking HTTP
+# requests. Both run in a worker thread so the event loop keeps answering
+# /_health (the kubelet probes it with a 1s timeout). The lock keeps them
+# serialised per worker process, exactly as they were when they ran on the
+# event loop: update() mutates the arrays get_plan() reads.
+mp_lock = threading.Lock()
+
+
+def _locked(fn, *args, **kwargs):
+    with mp_lock:
+        return fn(*args, **kwargs)
+
 
 @app.before_server_start
 async def init_mp(app):
@@ -51,7 +65,8 @@ async def plan(request):
     server = input_data.get('server', 'CN')
 
     try:
-        dct = app.ctx.mp.get_plan(
+        dct = await asyncio.to_thread(
+            _locked, app.ctx.mp.get_plan,
             required_dct, owned_dct, False,
             outcome=extra_outc,
             exp_demand=exp_demand,
@@ -71,9 +86,9 @@ async def plan(request):
 
 
 @app.after_server_start
-async def update_each_half_hour(app, loop):
+async def update_each_half_hour(app):
     while True:
-        app.ctx.mp.update()
+        await asyncio.to_thread(_locked, app.ctx.mp.update)
         await asyncio.sleep(30 * 60)
 
 

@@ -656,7 +656,6 @@ def request_data(url_stats, url_rules, save_path_stats, save_path_rules):
 
     req = urllib.request.Request(url_rules, None, headers)
     with urllib.request.urlopen(req, timeout=5) as response:
-        response = urllib.request.urlopen(req)
         convertion_rules = json.loads(response.read().decode())
         with open(save_path_rules, 'w') as outfile:
             json.dump(convertion_rules, outfile)
