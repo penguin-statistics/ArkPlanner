@@ -1,0 +1,26 @@
+name: Build Docker Image (Check)
+
+on:
+  pull_request:
+    branches:
+      - "**"
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Docker: Build Image"
+        uses: "penguin-statistics/actions/ghcr-docker@main"
+        with:
+          version: "__check__"
+          repository: "penguin-statistics/planner-backend"
+          push: false

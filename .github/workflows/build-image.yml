@@ -1,10 +1,11 @@
-name: Build Docker Image
+name: Build Docker Image (Release)
 
 on:
   push:
-    # trigger on any tag push
+    # trigger on version tag push, e.g. v1.3.0
     tags:
-      - "**"
+      - "v*"
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
@@ -12,21 +13,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v2
+      - name: "Checkout"
+        uses: actions/checkout@v4
 
-      - name: Get Tag Version
-        id: get_version
-        run: |
-          export TRUNCATED_GITHUB_SHA=$(echo ${{ github.sha }} | cut -c1-7);
-          echo "VERSION=${GITHUB_REF/refs\/tags\//}+${TRUNCATED_GITHUB_SHA}" >> $GITHUB_ENV
-          echo "GIT_TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+      - name: "Metadata: Git"
+        id: git-meta
+        uses: "penguin-statistics/actions/git-meta@main"
 
-      - name: Build and Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@3.04
+      # Pushes ghcr.io/penguin-statistics/planner-backend:<tag> and :latest
+      - name: "Docker: Build and Push Image"
+        uses: "penguin-statistics/actions/ghcr-docker@main"
         with:
-          name: penguin-statistics/planner-backend
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-          tags: "latest,${{ env.GIT_TAG }}"
+          version: ${{ steps.git-meta.outputs.version }}
+          repository: "penguin-statistics/planner-backend"
