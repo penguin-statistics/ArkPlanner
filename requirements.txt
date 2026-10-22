@@ -1,5 +1,6 @@
-numpy>=2.2.0
-sanic>=25.3.0
-scipy>=1.15.2
-click>=8.1.8
-sanic-ext>=24.12.0
+numpy>=2.5.4
+sanic>=25.12.1
+scipy>=1.18.1
+click>=8.5.0
+sanic-ext>=25.12.0
+pydantic>=2.14.1

@@ -28,9 +28,9 @@ _Note: the linear programming is based on the items dropping expectations estima
 
 **_1. 环境配置 - Environment requirements_**
 
-需要安装 Python 3.5 以上版本。Web 服务器则需要 3.6 以上。Windows 系统可通过[此链接](https://www.anaconda.com/distribution/)安装 Anaconda。强烈推荐使用 Jupyter notebook，详情请百度。
+需要安装 Python 3.12 以上版本（Docker 镜像使用 3.14）。Windows 系统可通过[此链接](https://www.anaconda.com/distribution/)安装 Anaconda。强烈推荐使用 Jupyter notebook，详情请百度。
 
-Python >= 3.5 (3.6 for web server) Required. For Windows users, I recommend installing [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommended. Google it for more details.
+Python >= 3.12 required (the Docker image uses 3.14). For Windows users, I recommend installing [Anaconda](https://www.anaconda.com/distribution/). Jupyter notebook is highly recommended. Google it for more details.
 
 **_2. 安装 - Installation_**
 

@@ -1,0 +1,9 @@
+.git
+.github
+.venv
+__pycache__
+*.pyc
+data/*.json
+demo.ipynb
+Dockerfile
+.dockerignore
